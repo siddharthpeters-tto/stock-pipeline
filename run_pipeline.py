@@ -17,7 +17,8 @@ files_to_clear = [
     "stage3_output.json",
     "prime_candidates.json",
     "level1_results.json",
-    "level2_results.json"
+    "level2_results.json",
+    "email_summary.txt"
 ]
 
 if not os.path.exists("pipeline_history.json"):
@@ -36,6 +37,7 @@ scripts = [
     "Stage4.py",
     "Stage5-1.py",
     "Stage5-2.py"
+    "generate_report.py"
 ]
 
 for script in scripts:

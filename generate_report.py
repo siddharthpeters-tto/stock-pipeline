@@ -110,8 +110,11 @@ for quadrant in groups:
 
 lines = []
 
-lines.append("PIPELINE RESULTS REPORT\n")
+run_time = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
 
+lines.append("PIPELINE RESULTS REPORT")
+lines.append(f"Run Timestamp: {run_time}")
+lines.append("")
 # --------------------------------
 # Top Research Candidates
 # --------------------------------
