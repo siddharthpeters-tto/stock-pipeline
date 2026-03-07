@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, send_file
 import subprocess
 import os
 
@@ -12,7 +12,7 @@ def run_pipeline():
         return {"error": "Unauthorized"}, 401
 
     subprocess.Popen(["python", "run_pipeline.py"])
-    return {"status": "pipeline started"}
+    return send_file("email_summary.txt")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
