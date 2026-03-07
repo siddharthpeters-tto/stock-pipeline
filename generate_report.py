@@ -114,6 +114,7 @@ run_time = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
 
 lines.append("PIPELINE RESULTS REPORT")
 lines.append(f"Run Timestamp: {run_time}")
+lines.append(f"Universe Size: {len(data)} candidates")
 lines.append("")
 # --------------------------------
 # Top Research Candidates
