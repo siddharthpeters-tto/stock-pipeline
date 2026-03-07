@@ -1939,5 +1939,443 @@
       "decision_tilt": "buy",
       "confidence_1_to_5": 3
     }
+  },
+  {
+    "ticker": "GWRE",
+    "company_name": "Guidewire Software, Inc.",
+    "bucket": "high_conviction_growth",
+    "level1_score": 2.0,
+    "kill_flags": [
+      "Low ROIC (<8%)"
+    ],
+    "roic": 0.01878051067001717,
+    "rev_cagr_5y": 0.12779809460177893,
+    "fcf_margin": 0.24543539530245936,
+    "dilution_5y": 0.0032280771025521376,
+    "sbc_to_revenue": 0.13435468485827792,
+    "net_debt_to_ebitda": 0.19210550692418138,
+    "ev_to_fcf": 48.70387309488151,
+    "ev_to_ebitda": 166.432532664073,
+    "ev_to_sales": 11.95365434580306,
+    "fcf_yield": 0.020532247980604528,
+    "earnings_yield": 0.004915023390773968,
+    "peer_symbols": [
+      "CPAY",
+      "GDDY",
+      "GRAB",
+      "J",
+      "NTNX",
+      "PTC",
+      "SSNC",
+      "TOST"
+    ],
+    "peer_ev_to_fcf_median": 28.78801821897817,
+    "peer_roic_median": 0.08438035743975664,
+    "peer_count_used": null,
+    "quality_bucket": "mid_quality",
+    "valuation_bucket": "expensive",
+    "quadrant": "Mixed_or_Unclear",
+    "quality_adjusted_value_score": -8.570476313049394,
+    "gpt_nuance": {
+      "business_quality_view": "low",
+      "valuation_view": "very_expensive",
+      "quality_vs_price_alignment": "overpriced_quality",
+      "two_strengths": [
+        "high fcf margin vs peers",
+        "low net debt to ebitda"
+      ],
+      "two_metric_based_risks": [
+        "low roic vs peers",
+        "high ev to fcf indicates valuation risk"
+      ],
+      "what_must_be_true_for_upside": "sustained revenue growth and improved profitability metrics",
+      "what_would_break_the_thesis": "significant decline in fcf margin or increased competition impacting growth",
+      "decision_tilt": "avoid",
+      "confidence_1_to_5": 2
+    }
+  },
+  {
+    "ticker": "TWLO",
+    "company_name": "Twilio Inc.",
+    "bucket": "high_conviction_growth",
+    "level1_score": 2.0,
+    "kill_flags": [
+      "Low ROIC (<8%)"
+    ],
+    "roic": 0.012027581334271682,
+    "rev_cagr_5y": 0.15556019242769636,
+    "fcf_margin": 0.20385694720181874,
+    "dilution_5y": -0.1216788289088561,
+    "sbc_to_revenue": 0.1184884413939004,
+    "net_debt_to_ebitda": 1.6636175505801025,
+    "ev_to_fcf": 19.230027307190404,
+    "ev_to_ebitda": 72.88667065877053,
+    "ev_to_sales": 3.9201746614514468,
+    "fcf_yield": 0.05200200623875789,
+    "earnings_yield": 0.0017183472623603843,
+    "peer_symbols": [
+      "BCE",
+      "NBIS",
+      "PINS",
+      "RCI",
+      "SNAP",
+      "TLK",
+      "TU",
+      "VIV"
+    ],
+    "peer_ev_to_fcf_median": 17.48809669338909,
+    "peer_roic_median": 0.05771070381406326,
+    "peer_count_used": null,
+    "quality_bucket": "mid_quality",
+    "valuation_bucket": "fair",
+    "quadrant": "Mixed_or_Unclear",
+    "quality_adjusted_value_score": 1.9509078108973823,
+    "gpt_nuance": {
+      "business_quality_view": "low",
+      "valuation_view": "expensive",
+      "quality_vs_price_alignment": "overpriced_quality",
+      "two_strengths": [
+        "fcf_margin of 20.4% is strong vs peers",
+        "negative dilution over 5 years indicates shareholder value retention"
+      ],
+      "two_metric_based_risks": [
+        "low ROIC of 1.2% raises sustainability concerns",
+        "high EV/EBITDA of 72.9 suggests potential earnings normalization risk"
+      ],
+      "what_must_be_true_for_upside": "Revenue growth must accelerate significantly to justify current valuation",
+      "what_would_break_the_thesis": "Sustained low revenue growth or increased competition could further pressure margins",
+      "decision_tilt": "avoid",
+      "confidence_1_to_5": 2
+    }
+  },
+  {
+    "ticker": "BMRN",
+    "company_name": "BioMarin Pharmaceutical Inc.",
+    "bucket": "high_conviction_growth",
+    "level1_score": 2.0,
+    "kill_flags": [
+      "Low ROIC (<8%)"
+    ],
+    "roic": 0.05637025140139638,
+    "rev_cagr_5y": 0.14929657307868505,
+    "fcf_margin": 0.22505403953058017,
+    "dilution_5y": 0.04886465556843786,
+    "sbc_to_revenue": 0.0563162843775388,
+    "net_debt_to_ebitda": -1.1673310806093524,
+    "ev_to_fcf": 15.29192911018048,
+    "ev_to_ebitda": 19.349413826326153,
+    "ev_to_sales": 3.4415104184613874,
+    "fcf_yield": 0.06539397304256779,
+    "earnings_yield": 0.029777486910994768,
+    "peer_symbols": [
+      "ALGN",
+      "BBIO",
+      "EXEL",
+      "HALO",
+      "MDGL",
+      "MRNA",
+      "QGEN",
+      "RNA"
+    ],
+    "peer_ev_to_fcf_median": 3.5390884834806577,
+    "peer_roic_median": -0.10950711776301067,
+    "peer_count_used": null,
+    "quality_bucket": "mid_quality",
+    "valuation_bucket": "fair",
+    "quadrant": "Mixed_or_Unclear",
+    "quality_adjusted_value_score": 7.1730222330422,
+    "gpt_nuance": {
+      "business_quality_view": "medium",
+      "valuation_view": "cheap",
+      "quality_vs_price_alignment": "underpriced_quality",
+      "two_strengths": [
+        "fcf_margin significantly above peer median",
+        "net_debt to ebitda is strongly negative"
+      ],
+      "two_metric_based_risks": [
+        "roic is below peer median, indicating potential inefficiency",
+        "rev_cagr is moderate, suggesting growth challenges"
+      ],
+      "what_must_be_true_for_upside": "Sustained revenue growth and improved ROIC are necessary for valuation expansion.",
+      "what_would_break_the_thesis": "A significant decline in fcf margin or a rise in net debt could undermine the investment case.",
+      "decision_tilt": "buy",
+      "confidence_1_to_5": 3
+    }
+  },
+  {
+    "ticker": "ADI",
+    "company_name": "Analog Devices, Inc.",
+    "bucket": "speculative_asymmetric",
+    "level1_score": 2.0,
+    "kill_flags": [
+      "Low ROIC (<8%)",
+      "High dilution (>20% over period)"
+    ],
+    "roic": 0.05415896504487209,
+    "rev_cagr_5y": 0.10774594104804702,
+    "fcf_margin": 0.38827257385337016,
+    "dilution_5y": 0.2438446945871555,
+    "sbc_to_revenue": 0.029180449171652204,
+    "net_debt_to_ebitda": 1.226010122352358,
+    "ev_to_fcf": 37.47559599920535,
+    "ev_to_ebitda": 31.886137520176796,
+    "ev_to_sales": 14.550746115300525,
+    "fcf_yield": 0.02668403192363383,
+    "earnings_yield": 0.014534055286406384,
+    "peer_symbols": [
+      "CDNS",
+      "DELL",
+      "KLAC",
+      "MPWR",
+      "MRVL",
+      "MSTR",
+      "NXPI",
+      "SNPS"
+    ],
+    "peer_ev_to_fcf_median": 41.44544285873471,
+    "peer_roic_median": 0.12571447047585538,
+    "peer_count_used": null,
+    "quality_bucket": "mid_quality",
+    "valuation_bucket": "expensive",
+    "quadrant": "Mixed_or_Unclear",
+    "quality_adjusted_value_score": 0.673285469978244,
+    "gpt_nuance": {
+      "business_quality_view": "medium",
+      "valuation_view": "cheap",
+      "quality_vs_price_alignment": "fairly_priced_quality",
+      "two_strengths": [
+        "fcf_margin significantly above peers",
+        "lower net_debt_to_ebitda compared to peers"
+      ],
+      "two_metric_based_risks": [
+        "roic below peer median, indicating potential inefficiency",
+        "high ev_to_fcf suggests valuation concerns"
+      ],
+      "what_must_be_true_for_upside": "sustained revenue growth and improved profitability metrics",
+      "what_would_break_the_thesis": "significant decline in fcf margin or worsening debt levels",
+      "decision_tilt": "buy",
+      "confidence_1_to_5": 3
+    }
+  },
+  {
+    "ticker": "TYL",
+    "company_name": "Tyler Technologies, Inc.",
+    "bucket": "speculative_asymmetric",
+    "level1_score": 2.0,
+    "kill_flags": [
+      "Low ROIC (<8%)"
+    ],
+    "roic": 0.06437283018213216,
+    "rev_cagr_5y": 0.10012650416228541,
+    "fcf_margin": 0.2733426515859609,
+    "dilution_5y": 0.055008813160987075,
+    "sbc_to_revenue": 0.06486018333519127,
+    "net_debt_to_ebitda": -0.6714503303398346,
+    "ev_to_fcf": 24.724299969569962,
+    "ev_to_ebitda": 31.179399277999764,
+    "ev_to_sales": 6.758205712288946,
+    "fcf_yield": 0.04044603896695859,
+    "earnings_yield": 0.019541365225980406,
+    "peer_symbols": [
+      "BSY",
+      "CDW",
+      "CHKP",
+      "GWRE",
+      "ON",
+      "PTC",
+      "SSNC",
+      "TOST"
+    ],
+    "peer_ev_to_fcf_median": 23.503860305522675,
+    "peer_roic_median": 0.11571468593238002,
+    "peer_count_used": null,
+    "quality_bucket": "mid_quality",
+    "valuation_bucket": "fair",
+    "quadrant": "Mixed_or_Unclear",
+    "quality_adjusted_value_score": 2.9981200560794425,
+    "gpt_nuance": {
+      "business_quality_view": "medium",
+      "valuation_view": "fair",
+      "quality_vs_price_alignment": "fairly_priced_quality",
+      "two_strengths": [
+        "fcf_margin of 27.3% exceeds peer median",
+        "negative net_debt_to_ebitda indicates strong balance sheet"
+      ],
+      "two_metric_based_risks": [
+        "roic of 6.4% is below peer median",
+        "high ev_to_fcf suggests potential valuation pressure"
+      ],
+      "what_must_be_true_for_upside": "sustained revenue growth and improved profitability metrics",
+      "what_would_break_the_thesis": "significant decline in cash flow generation or increased debt levels",
+      "decision_tilt": "hold",
+      "confidence_1_to_5": 3
+    }
+  },
+  {
+    "ticker": "MKSI",
+    "company_name": "MKS Inc.",
+    "bucket": "high_conviction_growth",
+    "level1_score": 0.0,
+    "kill_flags": [
+      "Low ROIC (<8%)",
+      "High dilution (>20% over period)"
+    ],
+    "roic": 0.06922639221158958,
+    "rev_cagr_5y": 0.07441053217468618,
+    "fcf_margin": 0.12643093360468075,
+    "dilution_5y": 0.2148014440433213,
+    "sbc_to_revenue": 0.013991350801322818,
+    "net_debt_to_ebitda": 4.6720930232558135,
+    "ev_to_fcf": 36.49930577464789,
+    "ev_to_ebitda": 21.09320345348837,
+    "ev_to_sales": 4.614641305011448,
+    "fcf_yield": 0.027397781376285565,
+    "earnings_yield": 0.0209047619047619,
+    "peer_symbols": [
+      "AMKR",
+      "APPF",
+      "AUR",
+      "DOX",
+      "IDCC",
+      "NVMI",
+      "OTEX",
+      "SANM"
+    ],
+    "peer_ev_to_fcf_median": 17.131189602347018,
+    "peer_roic_median": 0.09573777620902482,
+    "peer_count_used": null,
+    "quality_bucket": "low_quality",
+    "valuation_bucket": "expensive",
+    "quadrant": "LQ_Expensive",
+    "quality_adjusted_value_score": -6.119584079113974,
+    "gpt_nuance": {
+      "business_quality_view": "medium",
+      "valuation_view": "very_expensive",
+      "quality_vs_price_alignment": "overpriced_quality",
+      "two_strengths": [
+        "FCF margin of 12.64% exceeds peer median",
+        "ROIC of 6.92% is competitive but below peer median"
+      ],
+      "two_metric_based_risks": [
+        "High EV/FCF of 36.50 suggests overvaluation",
+        "Net debt to EBITDA of 4.67 raises leverage concerns"
+      ],
+      "what_must_be_true_for_upside": "Sustained revenue growth and improved profitability metrics are essential for valuation support.",
+      "what_would_break_the_thesis": "A significant decline in FCF or a rise in debt levels could undermine the investment thesis.",
+      "decision_tilt": "avoid",
+      "confidence_1_to_5": 2
+    }
+  },
+  {
+    "ticker": "SOFI",
+    "company_name": "SoFi Technologies, Inc.",
+    "bucket": "high_conviction_growth",
+    "level1_score": -1.0,
+    "kill_flags": [
+      "Low ROIC (<8%)",
+      "Gross margin deterioration (>=10 pts)",
+      "Negative FCF margin",
+      "High dilution (>20% over period)"
+    ],
+    "roic": 0.03039126491281319,
+    "rev_cagr_5y": 0.4470992884739893,
+    "fcf_margin": -0.8354798109777409,
+    "dilution_5y": 1.1835464661104784,
+    "sbc_to_revenue": 0.05494342603788119,
+    "net_debt_to_ebitda": -1.6249280496135423,
+    "ev_to_fcf": -5.267041447945269,
+    "ev_to_ebitda": 10.952972235891853,
+    "ev_to_sales": 4.400506793341241,
+    "fcf_yield": -0.18985990710023953,
+    "earnings_yield": 0.022222222222222223,
+    "peer_symbols": [
+      "ACGL",
+      "ARES",
+      "BBD",
+      "HBAN",
+      "MS",
+      "RJF",
+      "SCHW",
+      "SLF"
+    ],
+    "peer_ev_to_fcf_median": 13.20943996355053,
+    "peer_roic_median": 0.019230548376258136,
+    "peer_count_used": null,
+    "quality_bucket": "low_quality",
+    "valuation_bucket": "unclear",
+    "quadrant": "Mixed_or_Unclear",
+    "quality_adjusted_value_score": -2.5315207053815314,
+    "gpt_nuance": {
+      "business_quality_view": "low",
+      "valuation_view": "very_cheap",
+      "quality_vs_price_alignment": "value_trap_risk",
+      "two_strengths": [
+        "negative EV/FCF indicates potential for future cash flow improvement",
+        "strong net debt to EBITDA ratio suggests low leverage"
+      ],
+      "two_metric_based_risks": [
+        "negative FCF margin raises concerns about cash generation sustainability",
+        "high dilution over 5 years may impact shareholder value"
+      ],
+      "what_must_be_true_for_upside": "Company must demonstrate consistent revenue growth and improve cash flow metrics.",
+      "what_would_break_the_thesis": "Failure to achieve positive FCF and continued high dilution could undermine investment thesis.",
+      "decision_tilt": "avoid",
+      "confidence_1_to_5": 2
+    }
+  },
+  {
+    "ticker": "GLW",
+    "company_name": "Corning Incorporated",
+    "bucket": "speculative_asymmetric",
+    "level1_score": -3.0,
+    "kill_flags": [
+      "Low 5Y revenue CAGR (<5%)",
+      "Low ROIC (<8%)"
+    ],
+    "roic": 0.0753876672327701,
+    "rev_cagr_5y": 0.026400164092109657,
+    "fcf_margin": 0.09040885533303475,
+    "dilution_5y": 0.03864734299516908,
+    "sbc_to_revenue": 0.01829931537526393,
+    "net_debt_to_ebitda": 2.3285140562248996,
+    "ev_to_fcf": 81.02658731776363,
+    "ev_to_ebitda": 30.653431828647925,
+    "ev_to_sales": 7.325521010941199,
+    "fcf_yield": 0.01234162801499068,
+    "earnings_yield": 0.015083934798475388,
+    "peer_symbols": [
+      "ADSK",
+      "CLS",
+      "FTNT",
+      "INFY",
+      "KEYS",
+      "MSI",
+      "MSTR",
+      "RBLX"
+    ],
+    "peer_ev_to_fcf_median": 25.70209202908142,
+    "peer_roic_median": 0.17315203385974648,
+    "peer_count_used": null,
+    "quality_bucket": "mid_quality",
+    "valuation_bucket": "expensive",
+    "quadrant": "Mixed_or_Unclear",
+    "quality_adjusted_value_score": -11.771420643507966,
+    "gpt_nuance": {
+      "business_quality_view": "low",
+      "valuation_view": "very_expensive",
+      "quality_vs_price_alignment": "overpriced_quality",
+      "two_strengths": [
+        "fcf_margin is higher than peers",
+        "dilution rate is lower than peers"
+      ],
+      "two_metric_based_risks": [
+        "high ev_to_fcf indicates potential overvaluation",
+        "low roic compared to peers raises sustainability concerns"
+      ],
+      "what_must_be_true_for_upside": "improvement in profitability metrics and market conditions",
+      "what_would_break_the_thesis": "significant decline in cash flow generation or increased competition",
+      "decision_tilt": "avoid",
+      "confidence_1_to_5": 2
+    }
   }
 ]

@@ -1,5 +1,14 @@
 import subprocess
 import os
+import time
+
+for script in scripts:
+    start = time.time()
+    print(f"\nRunning {script}...")
+
+    subprocess.run(["python", script], check=True)
+
+    print(f"{script} finished in {round(time.time()-start,2)} seconds")
 
 files_to_clear = [
     "tickers.txt"
