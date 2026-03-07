@@ -117,8 +117,8 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 # Inputs / outputs
 INPUT_LEVEL1_JSON = os.getenv("INPUT_LEVEL1_JSON", "level1_results.json")
-OUT_JSON = os.getenv("OUT_STAGE5_2_JSON", "level_2_results.json")
-OUT_CSV = os.getenv("OUT_STAGE5_2_CSV", "level_2_ranked.csv")
+OUT_JSON = os.getenv("OUT_STAGE5_2_JSON", "level2_results.json")
+OUT_CSV = os.getenv("OUT_STAGE5_2_CSV", "level2_ranked.csv")
 
 # Universe handling
 INCLUDE_ERROR_ROWS = False  # False = skip tickers that had Stage5-1 errors

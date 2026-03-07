@@ -20,6 +20,10 @@ files_to_clear = [
     "level2_results.json"
 ]
 
+if not os.path.exists("pipeline_history.json"):
+    with open("pipeline_history.json", "w") as f:
+        f.write("[]")
+
 for f in files_to_clear:
     if os.path.exists(f):
         os.remove(f)

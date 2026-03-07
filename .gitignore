@@ -5,7 +5,7 @@ __pycache__/
 # Environment variables
 .env
 
-# Pipeline outputs
+# pipeline outputs
 tickers.txt
 stage1_output.json
 stage2_output.json
@@ -13,6 +13,9 @@ stage3_output.json
 prime_candidates.json
 level1_results.json
 level2_results.json
+
+# persistence tracking
+pipeline_history.json
 
 # System
 .DS_Store

@@ -1,0 +1,66 @@
+PIPELINE RESULTS REPORT
+
+===== TOP RESEARCH CANDIDATES =====
+
+INCY | Base Score: 21.02 | Final Score: 21.52 | Signal: strong_buy
+EXPE | Base Score: 19.54 | Final Score: 20.04 | Signal: strong_buy
+ALL | Base Score: 17.74 | Final Score: 18.24 | Signal: strong_buy
+CF | Base Score: 16.57 | Final Score: 17.07 | Signal: strong_buy
+TRV | Base Score: 13.45 | Final Score: 13.95 | Signal: buy
+
+===== HQ_Cheap =====
+
+1. INCY | Score: 21.02 | Final: 21.52 | Persistence: 1 | high_conviction_growth
+2. EXPE | Score: 19.54 | Final: 20.04 | Persistence: 1 | speculative_asymmetric
+3. ALL | Score: 17.74 | Final: 18.24 | Persistence: 1 | high_conviction_growth
+4. CF | Score: 16.57 | Final: 17.07 | Persistence: 1 | speculative_asymmetric
+5. TRV | Score: 13.45 | Final: 13.95 | Persistence: 1 | speculative_asymmetric
+
+===== Mixed_or_Unclear =====
+
+1. MEDP | Score: 23.33 | Final: 23.83 | Persistence: 1 | speculative_asymmetric
+2. MA | Score: 18.64 | Final: 19.14 | Persistence: 1 | speculative_asymmetric
+3. FSLR | Score: 16.22 | Final: 16.72 | Persistence: 1 | speculative_asymmetric
+4. DXCM | Score: 13.26 | Final: 13.76 | Persistence: 1 | speculative_asymmetric
+5. NBIX | Score: 12.35 | Final: 12.85 | Persistence: 1 | high_conviction_growth
+6. ADSK | Score: 11.04 | Final: 11.54 | Persistence: 1 | speculative_asymmetric
+7. INTU | Score: 10.42 | Final: 10.92 | Persistence: 1 | speculative_asymmetric
+8. OKTA | Score: 9.99 | Final: 10.49 | Persistence: 1 | high_conviction_growth
+9. PINS | Score: 7.79 | Final: 8.29 | Persistence: 1 | high_conviction_growth
+10. BMRN | Score: 7.17 | Final: 7.67 | Persistence: 1 | high_conviction_growth
+11. PTC | Score: 7.15 | Final: 7.65 | Persistence: 1 | operational_turnaround
+12. VEEV | Score: 6.69 | Final: 7.19 | Persistence: 1 | high_conviction_growth
+13. NOW | Score: 5.27 | Final: 5.77 | Persistence: 1 | speculative_asymmetric
+14. TOST | Score: 4.38 | Final: 4.88 | Persistence: 1 | high_conviction_growth
+15. HUBS | Score: 4.32 | Final: 4.82 | Persistence: 1 | high_conviction_growth
+16. ZBRA | Score: 4.2 | Final: 4.7 | Persistence: 1 | speculative_asymmetric
+17. TYL | Score: 3.0 | Final: 3.5 | Persistence: 1 | speculative_asymmetric
+18. BSX | Score: 2.88 | Final: 3.38 | Persistence: 1 | speculative_asymmetric
+19. PODD | Score: 2.46 | Final: 2.96 | Persistence: 1 | speculative_asymmetric
+20. TWLO | Score: 1.95 | Final: 2.45 | Persistence: 1 | high_conviction_growth
+21. PLTR | Score: 1.86 | Final: 2.36 | Persistence: 1 | high_conviction_growth
+22. ADI | Score: 0.67 | Final: 1.17 | Persistence: 1 | speculative_asymmetric
+23. FWONA | Score: -0.05 | Final: 0.45 | Persistence: 1 | speculative_asymmetric
+24. SOFI | Score: -2.53 | Final: -2.03 | Persistence: 1 | high_conviction_growth
+25. ALNY | Score: -3.62 | Final: -3.12 | Persistence: 1 | high_conviction_growth
+26. MRVL | Score: -7.59 | Final: -7.09 | Persistence: 1 | operational_turnaround
+27. GWRE | Score: -8.57 | Final: -8.07 | Persistence: 1 | high_conviction_growth
+28. GLW | Score: -11.77 | Final: -11.27 | Persistence: 1 | speculative_asymmetric
+
+===== HQ_Expensive =====
+
+1. ANET | Score: 14.47 | Final: 14.97 | Persistence: 1 | speculative_asymmetric
+2. LRCX | Score: 12.7 | Final: 13.2 | Persistence: 1 | speculative_asymmetric
+3. LLY | Score: 10.36 | Final: 10.86 | Persistence: 1 | high_conviction_growth
+4. UI | Score: 10.18 | Final: 10.68 | Persistence: 1 | high_conviction_growth
+5. FICO | Score: 9.84 | Final: 10.34 | Persistence: 1 | speculative_asymmetric
+6. APH | Score: 8.22 | Final: 8.72 | Persistence: 1 | speculative_asymmetric
+7. VRT | Score: 7.36 | Final: 7.86 | Persistence: 1 | speculative_asymmetric
+8. HWM | Score: 4.34 | Final: 4.84 | Persistence: 1 | speculative_asymmetric
+9. ISRG | Score: -0.19 | Final: 0.31 | Persistence: 1 | speculative_asymmetric
+
+===== LQ_Expensive =====
+
+1. PEN | Score: -4.84 | Final: -4.34 | Persistence: 1 | speculative_asymmetric
+2. AMD | Score: -5.65 | Final: -5.15 | Persistence: 1 | high_conviction_growth
+3. MKSI | Score: -6.12 | Final: -5.62 | Persistence: 1 | high_conviction_growth
