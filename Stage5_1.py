@@ -689,6 +689,28 @@ def write_csv(rows: List[Dict[str, Any]], path: str):
         for r in rows:
             w.writerow(r)
 
+def analyze_single_stock_stage5_1(symbol: str) -> Dict[str, Any]:
+    if not API_KEY:
+        raise RuntimeError("Missing FMP_API_KEY")
+
+    api = ApiClient(BASE_URL, API_KEY)
+
+    quant_bundle = fetch_quant_bundle(api, symbol)
+    quant = compute_quant_features(quant_bundle)
+
+    gpt_out = {}
+
+    flags = compute_kill_flags(quant)
+    lvl1_score = score_company(quant, gpt_out)
+
+    return {
+        "ticker": symbol,
+        **quant,
+        "kill_flags": flags,
+        "level1_score": lvl1_score,
+        "gpt": gpt_out,
+    }
+
 def main():
     api = ApiClient(BASE_URL, API_KEY)
     universe = load_prime60(INPUT_PATH)
@@ -722,29 +744,11 @@ def main():
         print(f"[{i}/{total}] Processing {symbol}...")
 
         try:
-            # -----------------------
-            # Quant Pull
-            # -----------------------
-            quant_bundle = fetch_quant_bundle(api, symbol)
-            quant = compute_quant_features(quant_bundle)
-            
-            gpt_out = {}
-
-
-            # -----------------------
-            # Scoring
-            # -----------------------
-            flags = compute_kill_flags(quant)
-            lvl1_score = score_company(quant, gpt_out)
-
+            single_result = analyze_single_stock_stage5_1(symbol)
             result_row = {
                 **row,
-                **quant,
-                "kill_flags": flags,
-                "level1_score": lvl1_score,
-                "gpt": gpt_out,
+                **single_result,
             }
-
         except Exception as e:
             result_row = {
                 **row,

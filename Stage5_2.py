@@ -92,6 +92,7 @@ import csv
 import sys
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
+from concurrent.futures import ThreadPoolExecutor
 
 import requests
 from dotenv import load_dotenv
@@ -106,6 +107,10 @@ load_dotenv()
 BASE_URL = os.getenv("FMP_BASE_URL", "https://financialmodelingprep.com/stable")
 FMP_API_KEY = os.getenv("FMP_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+CACHE_DIR = "api_cache"
+CACHE_TTL = 900  # seconds (15 minutes)
+
+os.makedirs(CACHE_DIR, exist_ok=True)
 
 if not FMP_API_KEY:
     raise RuntimeError("Missing FMP_API_KEY in environment/.env")
@@ -141,6 +146,39 @@ MIN_GPT_CONTEXT_CHARS = 200  # if less, skip GPT to prevent hallucination
 # =========================
 # HELPERS
 # =========================
+
+def cache_path(symbol: str, endpoint: str):
+    return os.path.join(CACHE_DIR, f"{symbol}_{endpoint}.json")
+
+
+def read_cache(symbol: str, endpoint: str):
+
+    path = cache_path(symbol, endpoint)
+
+    if not os.path.exists(path):
+        return None
+
+    age = time.time() - os.path.getmtime(path)
+
+    if age > CACHE_TTL:
+        return None
+
+    try:
+        with open(path, "r") as f:
+            return json.load(f)
+    except:
+        return None
+
+
+def write_cache(symbol: str, endpoint: str, data):
+
+    path = cache_path(symbol, endpoint)
+
+    try:
+        with open(path, "w") as f:
+            json.dump(data, f)
+    except:
+        pass
 
 def to_float(x) -> Optional[float]:
     try:
@@ -220,42 +258,93 @@ def fetch_live_quote(api: FmpClient, symbol: str) -> Dict[str, Any]:
     return {}
 
 
-def fetch_latest_key_metrics(api: FmpClient, symbol: str) -> Dict[str, Any]:
-    # FY, limit=1 gives latest fiscal year row
+def fetch_latest_key_metrics(api: FmpClient, symbol: str):
+
+    cached = read_cache(symbol, "key_metrics")
+    if cached:
+        return cached
+
     data = api.get("/key-metrics", {"symbol": symbol, "period": "FY", "limit": 1})
+
     if isinstance(data, list) and data:
-        return data[0]
+        result = data[0]
+        write_cache(symbol, "key_metrics", result)
+        return result
+
     return {}
 
-def fetch_latest_ratios(api: FmpClient, symbol: str) -> Dict[str, Any]:
+def fetch_latest_ratios(api: FmpClient, symbol: str):
+
+    cached = read_cache(symbol, "ratios")
+    if cached:
+        return cached
+
     data = api.get("/ratios", {"symbol": symbol, "period": "FY", "limit": 1})
+
     if isinstance(data, list) and data:
-        return data[0]
+        result = data[0]
+        write_cache(symbol, "ratios", result)
+        return result
+
     return {}
 
-def fetch_stock_peers(api: FmpClient, symbol: str) -> List[Dict[str, Any]]:
-    # Returns list of dicts {symbol, companyName, price, mktCap} (as you observed)
+def fetch_stock_peers(api: FmpClient, symbol: str):
+
+    cached = read_cache(symbol, "peers")
+    if cached:
+        return cached
+
     data = api.get("/stock-peers", {"symbol": symbol})
+
     if isinstance(data, list):
+        write_cache(symbol, "peers", data)
         return data
+
     return []
 
-def fetch_latest_income_statement(api: FmpClient, symbol: str) -> Dict[str, Any]:
+def fetch_latest_income_statement(api: FmpClient, symbol: str):
+
+    cached = read_cache(symbol, "income")
+    if cached:
+        return cached
+
     data = api.get("/income-statement", {"symbol": symbol, "period": "FY", "limit": 1})
+
     if isinstance(data, list) and data:
-        return data[0]
+        result = data[0]
+        write_cache(symbol, "income", result)
+        return result
+
     return {}
 
-def fetch_latest_cashflow_statement(api: FmpClient, symbol: str) -> Dict[str, Any]:
+def fetch_latest_cashflow_statement(api: FmpClient, symbol: str):
+
+    cached = read_cache(symbol, "cashflow")
+    if cached:
+        return cached
+
     data = api.get("/cash-flow-statement", {"symbol": symbol, "period": "FY", "limit": 1})
+
     if isinstance(data, list) and data:
-        return data[0]
+        result = data[0]
+        write_cache(symbol, "cashflow", result)
+        return result
+
     return {}
 
-def fetch_latest_balance_sheet(api: FmpClient, symbol: str) -> Dict[str, Any]:
+def fetch_latest_balance_sheet(api: FmpClient, symbol: str):
+
+    cached = read_cache(symbol, "balance")
+    if cached:
+        return cached
+
     data = api.get("/balance-sheet-statement", {"symbol": symbol, "period": "FY", "limit": 1})
+
     if isinstance(data, list) and data:
-        return data[0]
+        result = data[0]
+        write_cache(symbol, "balance", result)
+        return result
+
     return {}
 
 
@@ -578,6 +667,118 @@ def write_csv(rows: List[Dict[str, Any]], path: str) -> None:
         w.writeheader()
         for r in rows:
             w.writerow({k: r.get(k) for k in keys})
+
+def analyze_single_stock_stage5_2(symbol: str, level1_row: Dict[str, Any]) -> Dict[str, Any]:
+
+    api = FmpClient(BASE_URL, FMP_API_KEY)
+
+    # -------------------------------
+    # PARALLEL CORE DATA FETCH
+    # -------------------------------
+
+    with ThreadPoolExecutor(max_workers=7) as executor:
+
+        futures = {
+            "km": executor.submit(fetch_latest_key_metrics, api, symbol),
+            "rat": executor.submit(fetch_latest_ratios, api, symbol),
+            "peers": executor.submit(fetch_stock_peers, api, symbol),
+            "quote": executor.submit(fetch_live_quote, api, symbol),
+            "inc": executor.submit(fetch_latest_income_statement, api, symbol),
+            "cf": executor.submit(fetch_latest_cashflow_statement, api, symbol),
+            "bs": executor.submit(fetch_latest_balance_sheet, api, symbol)
+        }
+
+        km = futures["km"].result()
+        rat = futures["rat"].result()
+        peers = futures["peers"].result()
+
+        quote = futures["quote"].result()
+        inc = futures["inc"].result()
+        cf = futures["cf"].result()
+        bs = futures["bs"].result()
+
+
+    # -------------------------------
+    # PEER ANALYSIS
+    # -------------------------------
+
+    peer_symbols = [p.get("symbol") for p in peers if p.get("symbol") != symbol][:MAX_PEERS]
+
+    peer_ev_fcf_vals = []
+    peer_roic_vals = []
+
+    with ThreadPoolExecutor(max_workers=6) as executor:
+
+        peer_metrics = list(
+            executor.map(lambda ps: fetch_latest_key_metrics(api, ps), peer_symbols)
+        )
+
+    for pkm in peer_metrics:
+
+        peer_ev_fcf_vals.append(to_float(pkm.get("evToFreeCashFlow")))
+        peer_roic_vals.append(to_float(pkm.get("returnOnInvestedCapital")))
+
+    peer_medians = {
+        "peer_ev_to_fcf": median(peer_ev_fcf_vals),
+        "peer_roic": median(peer_roic_vals),
+    }
+
+    # Build structural metrics
+    m = build_value_quality_inputs(level1_row, km, rat)
+
+    live_price = to_float(quote.get("price"))
+    live_market_cap = to_float(quote.get("marketCap"))
+
+    total_debt = to_float(bs.get("totalDebt"))
+    cash = to_float(bs.get("cashAndCashEquivalents"))
+
+    fcf = to_float(cf.get("freeCashFlow"))
+    ebitda = to_float(inc.get("ebitda"))
+    revenue = to_float(inc.get("revenue"))
+    eps = to_float(inc.get("eps"))
+
+    enterprise_value = None
+
+    if live_market_cap and total_debt and cash is not None:
+        enterprise_value = live_market_cap + total_debt - cash
+
+    if enterprise_value and fcf:
+        m["ev_to_fcf"] = enterprise_value / fcf
+        m["fcf_yield"] = fcf / enterprise_value
+
+    if enterprise_value and ebitda:
+        m["ev_to_ebitda"] = enterprise_value / ebitda
+
+    if enterprise_value and revenue:
+        m["ev_to_sales"] = enterprise_value / revenue
+
+    if live_price and eps:
+        m["earnings_yield"] = eps / live_price
+
+    q_bucket = quality_bucket(m)
+    v_bucket = valuation_bucket(m)
+    quad = quadrant(q_bucket, v_bucket)
+
+    qav_score = score_quality_adjusted_value(m, peer_medians)
+
+    gpt = None
+
+    if RUN_GPT:
+        context = build_gpt_context(level1_row, m, peers, peer_medians)
+        if context and len(context.strip()) >= MIN_GPT_CONTEXT_CHARS:
+            gpt = call_gpt_nuance(symbol, context)
+
+    return {
+        "ticker": symbol,
+        "quality_bucket": q_bucket,
+        "valuation_bucket": v_bucket,
+        "quadrant": quad,
+        "quality_adjusted_value_score": qav_score,
+        "metrics": m,
+        "peer_medians": peer_medians,
+        "peer_symbols": peer_symbols,
+        "gpt": gpt
+    }
 
 
 def run_single_ticker(symbol: str):

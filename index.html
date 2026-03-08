@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stock Analyzer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0b1020;
+      color: #f3f4f6;
+      margin: 0;
+      padding: 32px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"] {
+      padding: 12px 14px;
+      font-size: 18px;
+      width: 240px;
+      border: none;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    button {
+      padding: 12px 18px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #ffffff;
+      color: #111827;
+    }
+
+    button:hover {
+      opacity: 0.95;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+    }
+
+    .card {
+      background: #141b2d;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 18px;
+    }
+
+    .badges {
+      margin: 10px 0 14px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: bold;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+
+    .good {
+      background: #2e7d32;
+      color: white;
+    }
+
+    .mid {
+      background: #ef6c00;
+      color: white;
+    }
+
+    .bad {
+      background: #c62828;
+      color: white;
+    }
+
+    .neutral {
+      background: #374151;
+      color: white;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    .metric-box {
+      background: #0f172a;
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .metric-label {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .loader {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .spinner {
+      border: 6px solid #263148;
+      border-top: 6px solid #4caf50;
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      animation: spin 1s linear infinite;
+      margin-top: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    pre {
+      background: #0a0f1c;
+      color: #e5e7eb;
+      padding: 18px;
+      border-radius: 10px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      background: #0f172a;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 10px;
+      text-align: left;
+      border-bottom: 1px solid #1f2937;
+      font-size: 14px;
+    }
+
+    th {
+      background: #111827;
+      color: #d1d5db;
+    }
+
+    tr:hover td {
+      background: #111827;
+    }
+
+    .section-note {
+      color: #9ca3af;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    .gpt-block p {
+      margin: 8px 0;
+      line-height: 1.5;
+    }
+
+    ul {
+      margin-top: 6px;
+      padding-left: 20px;
+    }
+
+    .error {
+      background: #4b1113;
+      color: #fecaca;
+      padding: 14px;
+      border-radius: 10px;
+      margin-top: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Stock Analyzer</h1>
+
+    <div class="toolbar">
+      <input id="ticker" type="text" placeholder="Enter ticker (e.g. NVDA)" />
+      <button onclick="analyze()">Analyze</button>
+      <label class="checkbox-row">
+        <input type="checkbox" id="includePeers" />
+        Include Competitors
+      </label>
+      <button type="button" onclick="toggleJSON()">Toggle Raw JSON</button>
+    </div>
+
+    <div id="loader" class="loader">
+      <div id="status">Starting analysis...</div>
+      <div class="spinner"></div>
+    </div>
+
+    <div id="errorBox" class="error hidden"></div>
+
+    <div id="results" class="hidden">
+      <div class="card">
+        <h2>Quality & Valuation</h2>
+        <div id="badges" class="badges"></div>
+        <div id="summaryText"></div>
+        <div class="section-note" id="modeNote"></div>
+      </div>
+
+      <div class="card">
+        <h2>Key Metrics</h2>
+        <div class="metric-grid">
+          <div class="metric-box">
+            <div class="metric-label">ROIC</div>
+            <div class="metric-value" id="roic">—</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">FCF Margin</div>
+            <div class="metric-value" id="fcf">—</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Revenue CAGR (5Y)</div>
+            <div class="metric-value" id="growth">—</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">EV / FCF</div>
+            <div class="metric-value" id="evfcf">—</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Quality Adjusted Score</div>
+            <div class="metric-value" id="qav">—</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Quadrant</div>
+            <div class="metric-value" id="quadrant">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>GPT Insights</h2>
+        <div id="gpt" class="gpt-block"></div>
+      </div>
+
+      <div id="comparisonCard" class="card hidden">
+        <h2>Competitor Comparison</h2>
+        <div class="section-note">Shown only when Include Competitors is enabled and the backend returns comparison data.</div>
+        <div id="comparisonTableWrap"></div>
+      </div>
+
+      <div id="jsonWrap" class="card hidden">
+        <h2>Raw JSON</h2>
+        <pre id="json"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let rawJsonVisible = false;
+
+    function toggleJSON() {
+      rawJsonVisible = !rawJsonVisible;
+      document.getElementById("jsonWrap").classList.toggle("hidden", !rawJsonVisible);
+    }
+
+    function formatPct(value) {
+      if (value === null || value === undefined || Number.isNaN(value)) return "—";
+      return (value * 100).toFixed(1) + "%";
+    }
+
+    function formatNum(value, decimals = 1) {
+      if (value === null || value === undefined || Number.isNaN(value)) return "—";
+      return Number(value).toFixed(decimals);
+    }
+
+    function badgeClass(label) {
+      if (label === "high_quality" || label === "cheap" || label === "HQ_Cheap") return "good";
+      if (label === "mid_quality" || label === "fair" || label === "Mixed_or_Unclear") return "mid";
+      if (label === "low_quality" || label === "expensive" || label === "HQ_Expensive" || label === "LQ_Expensive") return "bad";
+      return "neutral";
+    }
+
+    function friendlyLabel(label) {
+      const map = {
+        high_quality: "High Quality",
+        mid_quality: "Mid Quality",
+        low_quality: "Low Quality",
+        cheap: "Cheap",
+        fair: "Fair Value",
+        expensive: "Expensive",
+        HQ_Cheap: "HQ Cheap",
+        HQ_Expensive: "HQ Expensive",
+        LQ_Cheap: "LQ Cheap",
+        LQ_Expensive: "LQ Expensive",
+        Mixed_or_Unclear: "Mixed / Unclear"
+      };
+      return map[label] || label || "—";
+    }
+
+    function setStatus(message) {
+      document.getElementById("status").innerText = message;
+    }
+
+    function renderGPT(g) {
+      const el = document.getElementById("gpt");
+
+      if (!g) {
+        el.innerHTML = "<p>No GPT output returned.</p>";
+        return;
+      }
+
+      const strengths = Array.isArray(g.two_strengths) ? g.two_strengths : [];
+      const risks = Array.isArray(g.two_metric_based_risks) ? g.two_metric_based_risks : [];
+
+      el.innerHTML = `
+        <p><strong>Decision Tilt:</strong> ${g.decision_tilt || "—"}</p>
+        <p><strong>Business Quality View:</strong> ${g.business_quality_view || "—"}</p>
+        <p><strong>Valuation View:</strong> ${g.valuation_view || "—"}</p>
+        <p><strong>Quality vs Price:</strong> ${g.quality_vs_price_alignment || "—"}</p>
+
+        <p><strong>Strengths</strong></p>
+        <ul>
+          ${strengths.map(x => `<li>${x}</li>`).join("") || "<li>—</li>"}
+        </ul>
+
+        <p><strong>Risks</strong></p>
+        <ul>
+          ${risks.map(x => `<li>${x}</li>`).join("") || "<li>—</li>"}
+        </ul>
+
+        <p><strong>What must be true for upside:</strong> ${g.what_must_be_true_for_upside || "—"}</p>
+        <p><strong>What would break the thesis:</strong> ${g.what_would_break_the_thesis || "—"}</p>
+        <p><strong>Confidence:</strong> ${g.confidence_1_to_5 || "—"}/5</p>
+      `;
+    }
+
+    function renderComparisonTable(rows) {
+      const wrap = document.getElementById("comparisonTableWrap");
+
+      if (!Array.isArray(rows) || rows.length === 0) {
+        wrap.innerHTML = "<p>No comparison data returned.</p>";
+        return;
+      }
+
+      const html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Ticker</th>
+              <th>ROIC</th>
+              <th>FCF Margin</th>
+              <th>Rev CAGR 5Y</th>
+              <th>EV / FCF</th>
+              <th>Quadrant</th>
+              <th>QAV Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(row => `
+              <tr>
+                <td>${row.ticker || "—"}</td>
+                <td>${formatPct(row.roic)}</td>
+                <td>${formatPct(row.fcf_margin)}</td>
+                <td>${formatPct(row.rev_cagr_5y)}</td>
+                <td>${formatNum(row.ev_to_fcf)}</td>
+                <td>${friendlyLabel(row.quadrant)}</td>
+                <td>${formatNum(row.quality_adjusted_value_score, 2)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+
+      wrap.innerHTML = html;
+    }
+
+    async function analyze() {
+      const ticker = document.getElementById("ticker").value.trim().toUpperCase();
+      const includePeers = document.getElementById("includePeers").checked;
+
+      if (!ticker) {
+        alert("Please enter a ticker.");
+        return;
+      }
+
+      document.getElementById("errorBox").classList.add("hidden");
+      document.getElementById("results").classList.add("hidden");
+      document.getElementById("comparisonCard").classList.add("hidden");
+      document.getElementById("loader").style.display = "block";
+
+      setStatus("Fetching financial data...");
+
+      const status1 = setTimeout(() => setStatus("Running structural analysis..."), 2500);
+      const status2 = setTimeout(() => setStatus("Running valuation engine..."), 7000);
+      const status3 = setTimeout(() => setStatus(includePeers ? "Analyzing competitors..." : "Generating GPT insights..."), 12000);
+      const status4 = setTimeout(() => setStatus("Still working... peer and GPT calls can take time."), 25000);
+
+      try {
+        const res = await fetch("/analyze-stock", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ticker: ticker,
+            include_peers: includePeers
+          })
+        });
+
+        const data = await res.json();
+
+        clearTimeout(status1);
+        clearTimeout(status2);
+        clearTimeout(status3);
+        clearTimeout(status4);
+
+        document.getElementById("loader").style.display = "none";
+
+        if (!res.ok || data.error) {
+          document.getElementById("errorBox").innerText = data.error || "Unknown error";
+          document.getElementById("errorBox").classList.remove("hidden");
+          return;
+        }
+
+        const s2 = data.stage5_2 || {};
+        const m = s2.metrics || {};
+        const g = s2.gpt || null;
+
+        const qualityBucket = s2.quality_bucket || "unknown";
+        const valuationBucket = s2.valuation_bucket || "unknown";
+        const quadrant = s2.quadrant || "unknown";
+
+        document.getElementById("badges").innerHTML = `
+          <span class="badge ${badgeClass(qualityBucket)}">${friendlyLabel(qualityBucket)}</span>
+          <span class="badge ${badgeClass(valuationBucket)}">${friendlyLabel(valuationBucket)}</span>
+          <span class="badge ${badgeClass(quadrant)}">${friendlyLabel(quadrant)}</span>
+        `;
+
+        document.getElementById("summaryText").innerHTML = `
+          <p><strong>Ticker:</strong> ${ticker}</p>
+          <p><strong>Investment Signal:</strong> ${g?.decision_tilt || "—"}</p>
+        `;
+
+        document.getElementById("modeNote").innerText = includePeers
+          ? "Competitor mode enabled."
+          : "Single-stock mode.";
+
+        document.getElementById("roic").innerText = formatPct(m.roic);
+        document.getElementById("fcf").innerText = formatPct(m.fcf_margin);
+        document.getElementById("growth").innerText = formatPct(m.rev_cagr_5y);
+        document.getElementById("evfcf").innerText = formatNum(m.ev_to_fcf);
+        document.getElementById("qav").innerText = formatNum(s2.quality_adjusted_value_score, 2);
+        document.getElementById("quadrant").innerText = friendlyLabel(quadrant);
+
+        renderGPT(g);
+
+        document.getElementById("json").innerText = JSON.stringify(data, null, 2);
+
+        if (includePeers && Array.isArray(data.comparison) && data.comparison.length > 0) {
+          renderComparisonTable(data.comparison);
+          document.getElementById("comparisonCard").classList.remove("hidden");
+        }
+
+        document.getElementById("results").classList.remove("hidden");
+      } catch (err) {
+        clearTimeout(status1);
+        clearTimeout(status2);
+        clearTimeout(status3);
+        clearTimeout(status4);
+
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("errorBox").innerText = "Request failed: " + err.message;
+        document.getElementById("errorBox").classList.remove("hidden");
+      }
+    }
+  </script>
+</body>
+</html>

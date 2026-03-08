@@ -35,8 +35,8 @@ scripts = [
     "Stage2.py",
     "Stage3.py",
     "Stage4.py",
-    "Stage5-1.py",
-    "Stage5-2.py"
+    "Stage5_1.py",
+    "Stage5_2.py"
     "generate_report.py"
 ]
 
