@@ -668,6 +668,39 @@ def write_csv(rows: List[Dict[str, Any]], path: str) -> None:
         for r in rows:
             w.writerow({k: r.get(k) for k in keys})
 
+def investment_view(quality, valuation):
+
+    if quality == "high_quality":
+
+        if valuation == "cheap":
+            return "Strong Buy"
+
+        if valuation == "fair":
+            return "Accumulate"
+
+        if valuation == "expensive":
+            return "Watch for Pullback"
+
+    if quality == "mid_quality":
+
+        if valuation == "cheap":
+            return "Speculative Buy"
+
+        if valuation == "fair":
+            return "Neutral"
+
+        if valuation == "expensive":
+            return "Avoid"
+
+    if quality == "low_quality":
+
+        if valuation == "cheap":
+            return "Value Trap Risk"
+
+        return "Avoid"
+
+    return "Unclear"
+
 def analyze_single_stock_stage5_2(symbol: str, level1_row: Dict[str, Any]) -> Dict[str, Any]:
 
     api = FmpClient(BASE_URL, FMP_API_KEY)
@@ -761,6 +794,8 @@ def analyze_single_stock_stage5_2(symbol: str, level1_row: Dict[str, Any]) -> Di
 
     qav_score = score_quality_adjusted_value(m, peer_medians)
 
+    investment_signal = investment_view(q_bucket, v_bucket)
+
     gpt = None
 
     if RUN_GPT:
@@ -773,6 +808,7 @@ def analyze_single_stock_stage5_2(symbol: str, level1_row: Dict[str, Any]) -> Di
         "quality_bucket": q_bucket,
         "valuation_bucket": v_bucket,
         "quadrant": quad,
+        "investment_view": investment_signal,
         "quality_adjusted_value_score": qav_score,
         "metrics": m,
         "peer_medians": peer_medians,
@@ -1053,6 +1089,8 @@ def main():
             v_bucket = valuation_bucket(m)
             quad = quadrant(q_bucket, v_bucket)
             qav_score = score_quality_adjusted_value(m, peer_medians)
+
+
 
             # =============================
             # GPT + DURABILITY OVERLAY

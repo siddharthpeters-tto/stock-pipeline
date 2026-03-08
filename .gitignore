@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.pyc
+api_cache/
 
 # Environment variables
 .env
