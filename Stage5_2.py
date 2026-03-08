@@ -468,15 +468,32 @@ def valuation_bucket(m: Dict[str, Any]) -> str:
 
 
 def quadrant(quality: str, val: str) -> str:
-    if quality == "high_quality" and val == "cheap":
-        return "HQ_Cheap"
-    if quality == "high_quality" and val == "expensive":
-        return "HQ_Expensive"
-    if quality == "low_quality" and val == "cheap":
-        return "LQ_Cheap"
-    if quality == "low_quality" and val == "expensive":
-        return "LQ_Expensive"
-    return "Mixed_or_Unclear"
+
+    if quality == "high_quality":
+        if val == "cheap":
+            return "HQ_Cheap"
+        if val == "fair":
+            return "HQ_FairValue"
+        if val == "expensive":
+            return "HQ_Expensive"
+
+    if quality == "mid_quality":
+        if val == "cheap":
+            return "MQ_Cheap"
+        if val == "fair":
+            return "MQ_FairValue"
+        if val == "expensive":
+            return "MQ_Expensive"
+
+    if quality == "low_quality":
+        if val == "cheap":
+            return "LQ_Cheap"
+        if val == "fair":
+            return "LQ_FairValue"
+        if val == "expensive":
+            return "LQ_Expensive"
+
+    return "Unclassified"
 
 def score_quality_adjusted_value(m: Dict[str, Any], peer_medians: Dict[str, Optional[float]]) -> float:
     """
