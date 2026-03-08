@@ -466,7 +466,8 @@
 
         document.getElementById("summaryText").innerHTML = `
           <p><strong>Ticker:</strong> ${ticker}</p>
-          <p><strong>Investment Signal:</strong> ${g?.decision_tilt || "—"}</p>
+          <p><strong>Investment View:</strong> ${s2.investment_view || "—"}</p>
+          <p><strong>AI Perspective:</strong> ${g?.decision_tilt || "—"}</p>
         `;
 
         document.getElementById("modeNote").innerText = includePeers
