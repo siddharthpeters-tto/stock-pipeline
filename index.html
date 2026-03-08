@@ -461,7 +461,6 @@
         document.getElementById("badges").innerHTML = `
           <span class="badge ${badgeClass(qualityBucket)}">${friendlyLabel(qualityBucket)}</span>
           <span class="badge ${badgeClass(valuationBucket)}">${friendlyLabel(valuationBucket)}</span>
-          <span class="badge ${badgeClass(quadrant)}">${friendlyLabel(quadrant)}</span>
         `;
 
         document.getElementById("summaryText").innerHTML = `
@@ -479,7 +478,6 @@
         document.getElementById("growth").innerText = formatPct(m.rev_cagr_5y);
         document.getElementById("evfcf").innerText = formatNum(m.ev_to_fcf);
         document.getElementById("qav").innerText = formatNum(s2.quality_adjusted_value_score, 2);
-        document.getElementById("quadrant").innerText = friendlyLabel(quadrant);
 
         renderGPT(g);
 
