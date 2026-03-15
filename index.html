@@ -323,7 +323,6 @@
         <h2>Quality & Valuation</h2>
         <div id="badges" class="badges"></div>
         <div id="summaryText"></div>
-        <div class="section-note" id="modeNote"></div>
       </div>
 
       <div class="card">
@@ -346,12 +345,8 @@
             <div class="metric-value" id="evfcf">—</div>
           </div>
           <div class="metric-box">
-            <div class="metric-label">Quality Adjusted Score</div>
+            <div class="metric-label">QAV Score</div>
             <div class="metric-value" id="qav">—</div>
-          </div>
-          <div class="metric-box">
-            <div class="metric-label">Quadrant</div>
-            <div class="metric-value" id="quadrant">—</div>
           </div>
         </div>
       </div>
@@ -472,7 +467,6 @@
               <th>FCF Margin</th>
               <th>Rev CAGR 5Y</th>
               <th>EV / FCF</th>
-              <th>Quadrant</th>
               <th>QAV Score</th>
             </tr>
           </thead>
@@ -484,7 +478,6 @@
                 <td>${formatPct(row.fcf_margin)}</td>
                 <td>${formatPct(row.rev_cagr_5y)}</td>
                 <td>${formatNum(row.ev_to_fcf)}</td>
-                <td>${friendlyLabel(row.quadrant)}</td>
                 <td>${formatNum(row.quality_adjusted_value_score, 2)}</td>
               </tr>
             `).join("")}
@@ -549,7 +542,6 @@
 
         const qualityBucket = s2.quality_bucket || "unknown";
         const valuationBucket = s2.valuation_bucket || "unknown";
-        const quadrant = s2.quadrant || "unknown";
 
         document.getElementById("badges").innerHTML = `
           <span class="badge ${badgeClass(qualityBucket)}">${friendlyLabel(qualityBucket)}</span>
@@ -561,10 +553,6 @@
           <p><strong>Investment View:</strong> ${s2.investment_view || "—"}</p>
           <p><strong>AI Perspective:</strong> ${g?.decision_tilt || "—"}</p>
         `;
-
-        document.getElementById("modeNote").innerText = includePeers
-          ? "Competitor mode enabled."
-          : "Single-stock mode.";
 
         document.getElementById("roic").innerText = formatPct(m.roic);
         document.getElementById("fcf").innerText = formatPct(m.fcf_margin);
