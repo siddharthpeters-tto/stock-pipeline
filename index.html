@@ -10,7 +10,7 @@
       background: #0b1020;
       color: #f3f4f6;
       margin: 0;
-      padding: 32px;
+      padding: 12px;
     }
 
     .container {
@@ -25,15 +25,16 @@
     .toolbar {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
+      flex-direction: column;
+      gap: 10px;
+      align-items: stretch;
       margin-bottom: 20px;
     }
 
     input[type="text"] {
       padding: 12px 14px;
       font-size: 18px;
-      width: 240px;
+      width: 100%;
       border: none;
       border-radius: 8px;
       outline: none;
@@ -41,12 +42,14 @@
 
     button {
       padding: 12px 18px;
+      height: 44px;
       font-size: 16px;
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      background: #ffffff;
-      color: #111827;
+      button {
+      background: #4caf50;
+      color: white;
     }
 
     button:hover {
@@ -246,6 +249,34 @@
     input:checked + .slider:before {
       transform: translateX(22px);
     }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .row input {
+      flex: 1;
+    }
+
+    .row button {
+      white-space: nowrap;
+    }
+
+    .toggles {
+      justify-content: space-between;
+      margin-top: 6px;
+    }
+
+    .toggle-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+    }
+
   </style>
 </head>
 <body>
@@ -253,17 +284,32 @@
     <h1>Stock Analyzer</h1>
 
     <div class="toolbar">
-      <input id="ticker" type="text" placeholder="Enter ticker (e.g. NVDA)" />
-      <button onclick="analyze()">Analyze</button>
-      <label class="checkbox-row">
-        <input type="checkbox" id="includePeers" />
-        Include Competitors
-      </label>
-      <label class="toggle">
-        <input type="checkbox" id="jsonToggle" onchange="toggleJSON()">
-        <span class="slider"></span>
-      </label>
-      <span>Raw JSON</span>
+
+      <div class="row">
+        <input id="ticker" type="text" placeholder="Ticker (e.g. NVDA)" autofocus/>
+        <button onclick="analyze()">Analyze</button>
+      </div>
+
+      <div class="row toggles">
+
+        <div class="toggle-group">
+          <span>Competitors</span>
+          <label class="toggle">
+            <input type="checkbox" id="includePeers">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-group">
+          <span>JSON</span>
+          <label class="toggle">
+            <input type="checkbox" id="jsonToggle" onchange="toggleJSON()">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+      </div>
+
     </div>
 
     <div id="loader" class="loader">
