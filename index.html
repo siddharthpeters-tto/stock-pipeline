@@ -219,7 +219,10 @@
         <input type="checkbox" id="includePeers" />
         Include Competitors
       </label>
-      <button type="button" onclick="toggleJSON()">Toggle Raw JSON</button>
+      <label class="checkbox-row">
+        <input type="checkbox" id="jsonToggle" onchange="toggleJSON()" />
+        Show Raw JSON
+      </label>
     </div>
 
     <div id="loader" class="loader">
