@@ -2,16 +2,8 @@ import subprocess
 import os
 import time
 
-for script in scripts:
-    start = time.time()
-    print(f"\nRunning {script}...")
-
-    subprocess.run(["python", script], check=True)
-
-    print(f"{script} finished in {round(time.time()-start,2)} seconds")
-
 files_to_clear = [
-    "tickers.txt"
+    "tickers.txt",
     "stage1_output.json",
     "stage2_output.json",
     "stage3_output.json",
@@ -36,12 +28,14 @@ scripts = [
     "Stage3.py",
     "Stage4.py",
     "Stage5_1.py",
-    "Stage5_2.py"
+    "Stage5_2.py",
     "generate_report.py"
 ]
 
 for script in scripts:
-    print(f"Running {script}...")
+    start = time.time()
+    print(f"\nRunning {script}...")
     subprocess.run(["python", script], check=True)
+    print(f"{script} finished in {round(time.time()-start, 2)} seconds")
 
 print("Pipeline finished.")
