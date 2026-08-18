@@ -1,0 +1,142 @@
+{
+  "SPY": {
+    "name": "S&P 500",
+    "category": "BENCHMARK",
+    "benchmark": null,
+    "description": "Broad US large-cap market benchmark.",
+    "enabled": true
+  },
+  "QQQ": {
+    "name": "Nasdaq 100",
+    "category": "BENCHMARK",
+    "benchmark": "SPY",
+    "description": "Large-cap growth / tech-heavy benchmark.",
+    "enabled": true
+  },
+  "SOXX": {
+    "name": "Semiconductors",
+    "category": "AI_GROWTH",
+    "benchmark": "QQQ",
+    "description": "Semiconductor manufacturers and equipment makers.",
+    "enabled": true
+  },
+  "IGV": {
+    "name": "Software",
+    "category": "AI_GROWTH",
+    "benchmark": "QQQ",
+    "description": "Software / SaaS companies.",
+    "enabled": true
+  },
+  "CIBR": {
+    "name": "Cybersecurity",
+    "category": "AI_GROWTH",
+    "benchmark": "QQQ",
+    "description": "Cybersecurity software and services.",
+    "enabled": true
+  },
+  "SKYY": {
+    "name": "Cloud Computing",
+    "category": "AI_GROWTH",
+    "benchmark": "QQQ",
+    "description": "Cloud infrastructure and services.",
+    "enabled": true
+  },
+  "UFO": {
+    "name": "Space",
+    "category": "SPECULATIVE",
+    "benchmark": "QQQ",
+    "description": "Space exploration and satellite industry.",
+    "enabled": true
+  },
+  "DRIV": {
+    "name": "EV / Autonomous Mobility",
+    "category": "SPECULATIVE",
+    "benchmark": "QQQ",
+    "description": "Electric vehicle and autonomous driving technology.",
+    "enabled": true
+  },
+  "XBI": {
+    "name": "Biotechnology",
+    "category": "SPECULATIVE",
+    "benchmark": "SPY",
+    "description": "Biotechnology, equal-weighted small/mid-cap tilt.",
+    "enabled": true
+  },
+  "ITA": {
+    "name": "Aerospace & Defense",
+    "category": "AEROSPACE_DEFENSE",
+    "benchmark": "SPY",
+    "description": "Aerospace and defense contractors.",
+    "enabled": true
+  },
+  "XLF": {
+    "name": "Broad Financials",
+    "category": "FINANCIALS",
+    "benchmark": "SPY",
+    "description": "Broad financial sector (banks, insurers, payments).",
+    "enabled": true
+  },
+  "KRE": {
+    "name": "Regional Banks",
+    "category": "FINANCIALS",
+    "benchmark": "SPY",
+    "description": "Regional bank equal-weight index.",
+    "enabled": true
+  },
+  "FINX": {
+    "name": "FinTech",
+    "category": "FINANCIALS",
+    "benchmark": "SPY",
+    "description": "Financial technology companies.",
+    "enabled": true
+  },
+  "XLI": {
+    "name": "Industrials",
+    "category": "CYCLICAL",
+    "benchmark": "SPY",
+    "description": "Industrial sector.",
+    "enabled": true
+  },
+  "XLE": {
+    "name": "Energy",
+    "category": "CYCLICAL",
+    "benchmark": "SPY",
+    "description": "Energy sector.",
+    "enabled": true
+  },
+  "XLY": {
+    "name": "Consumer Discretionary",
+    "category": "CYCLICAL",
+    "benchmark": "SPY",
+    "description": "Consumer discretionary sector.",
+    "enabled": true
+  },
+  "XHB": {
+    "name": "Homebuilders",
+    "category": "CYCLICAL",
+    "benchmark": "SPY",
+    "description": "Homebuilders and related industries.",
+    "enabled": true
+  },
+  "XLV": {
+    "name": "Healthcare",
+    "category": "DEFENSIVE",
+    "benchmark": "SPY",
+    "description": "Healthcare sector.",
+    "enabled": true
+  },
+  "XLP": {
+    "name": "Consumer Staples",
+    "category": "DEFENSIVE",
+    "benchmark": "SPY",
+    "description": "Consumer staples sector.",
+    "enabled": true
+  },
+  "XLU": {
+    "name": "Utilities",
+    "category": "DEFENSIVE",
+    "benchmark": "SPY",
+    "description": "Utilities sector.",
+    "enabled": true
+  }
+}

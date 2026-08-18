@@ -5,3 +5,5 @@ python-dotenv
 openai
 flask
 gunicorn
+pytest
+matplotlib

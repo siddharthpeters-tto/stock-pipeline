@@ -20,3 +20,8 @@ pipeline_history.json
 
 # System
 .DS_Store
+
+# rotation monitor
+data/rotation/
+outputs/
+.pytest_cache/
