@@ -56,11 +56,9 @@ Stage5-2 answers:
 import os
 import json
 import time
-import math
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 import requests
-from openai import OpenAI
 from dotenv import load_dotenv
 from datetime import datetime
 
@@ -83,9 +81,6 @@ OUTPUT_CSV = "level1_results.csv"
 BASE_URL = "https://financialmodelingprep.com/stable"
 API_KEY = os.getenv("FMP_API_KEY")  # <-- set this in your .env or environment variables
 
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")  # or whatever you prefer
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
 REQUEST_TIMEOUT = 30
 MAX_RETRIES = 3
 
@@ -94,24 +89,6 @@ MAX_RETRIES = 3
 # Safe rate ≈ 42 tickers per minute max
 # 60 tickers should take ≥ 90 seconds
 SLEEP_BETWEEN_TICKERS = 1.5
-
-
-# ---------------------------------------
-# EDIT ONCE: Map your actual endpoints here
-# ---------------------------------------
-ENDPOINTS = {
-    "income_statement":     "/income-statement",          # FY/quarter available in stable (not -ttm)
-
-    "cash_flow":            "/cash-flow-statement",
-
-    "balance_sheet":        "/balance-sheet-statement",
-
-    "ratios":               "/ratios",
-
-    "key_metrics":          "/key-metrics",
-
-    "transcript_latest":    "/earning-call-transcript",   # NOTE: confirm exact slug in your docs
-}
 
 
 
@@ -407,155 +384,6 @@ def compute_quant_features(bundle: Dict[str, Any]) -> Dict[str, Any]:
         "roic_std_5y": roic_std_5y,
         "cycle_distortion_flag": cycle_distortion_flag,
     }
-
-# =========================
-# SEGMENTATION NORMALIZATION
-# =========================
-
-def normalize_segmentation(segmentation: Any) -> Dict[str, Any]:
-    if not isinstance(segmentation, list) or not segmentation:
-        return {
-            "largest_segment_name": None,
-            "largest_segment_share": None,
-            "segment_notes": None,
-        }
-
-    # Sort newest fiscal year first
-    segmentation = sorted(
-        segmentation,
-        key=lambda x: x.get("fiscalYear", 0),
-        reverse=True
-    )
-
-    latest = segmentation[0]
-    data = latest.get("data", {})
-
-    if not isinstance(data, dict) or not data:
-        return {
-            "largest_segment_name": None,
-            "largest_segment_share": None,
-            "segment_notes": None,
-        }
-
-    total = sum(to_float(v) or 0 for v in data.values())
-
-    if total == 0:
-        return {
-            "largest_segment_name": None,
-            "largest_segment_share": None,
-            "segment_notes": None,
-        }
-
-    largest_segment = max(data.items(), key=lambda x: to_float(x[1]) or 0)
-
-    return {
-        "largest_segment_name": largest_segment[0],
-        "largest_segment_share": (to_float(largest_segment[1]) or 0) / total,
-        "segment_notes": None,
-    }
-
-
-
-# =========================
-# GPT EXTRACTION
-# =========================
-
-GPT_SCHEMA = """
-Return JSON ONLY (no markdown, no commentary) with this exact schema:
-
-{
-  "business_one_liner": "string",
-  "primary_revenue_model": "string",
-  "core_customer_type": "string",
-
-  "structural_strengths": ["string", "string"],
-  "structural_weaknesses": ["string", "string"],
-
-  "industry_characteristics": "asset_heavy|asset_light|regulated|commodity_exposed|platform|recurring_revenue|cyclical|unclear",
-
-  "demand_visibility": "high|moderate|low|unclear",
-  "pricing_power": "strong|moderate|weak|unclear",
-  "competitive_intensity": "high|medium|low|unclear",
-
-  "key_business_risks": ["string", "string"]
-}
-
-Rules:
-- Use ONLY the company description and basic profile information provided.
-- Do NOT use valuation metrics.
-- Do NOT make investment recommendations.
-- Do NOT classify quality level.
-- Do NOT infer financial strength beyond description.
-- Keep each string concise (<= 20 words).
-- If information is not available, use "unclear".
-"""
-
-
-def call_gpt_for_level1(symbol: str, combined_text: str) -> Dict[str, Any]:
-
-    prompt = f"""
-You are an institutional equity analyst doing Level-1 triage.
-Use ONLY the provided company description and earnings transcripts.
-
-{GPT_SCHEMA}
-
-COMPANY: {symbol}
-If the provided material does not clearly support an answer, return "unclear".
-Do NOT infer or assume information not explicitly stated.
-
-
-Source Material:
-{combined_text}
-""".strip()
-
-    resp = client.chat.completions.create(
-        model=OPENAI_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0
-    )
-
-    raw = resp.choices[0].message.content.strip()
-
-    try:
-        return json.loads(raw)
-    except Exception:
-        return {"_parse_error": True, "_raw": raw}
-
-
-def build_gpt_input(symbol, text_bundle):
-    profile_text = ""
-
-    profile = text_bundle.get("profile")
-    if isinstance(profile, list) and profile:
-        profile_text = profile[0].get("description", "")
-
-    return f"""
-Company: {symbol}
-
-Business Description:
-{profile_text}
-"""
-
-
-
-def extract_transcript_texts(transcripts_json: Any) -> List[str]:
-    """
-    Your transcript endpoint example showed fields:
-    {"symbol": "...", "period": "Q3", "year": 2020, "date": "...", "content": "..."}
-    """
-    texts = []
-    if isinstance(transcripts_json, list):
-        for t in transcripts_json:
-            if isinstance(t, dict):
-                c = t.get("content") or t.get("text") or ""
-                if isinstance(c, str) and c.strip():
-                    texts.append(c.strip())
-    elif isinstance(transcripts_json, dict):
-        c = transcripts_json.get("content") or transcripts_json.get("text") or ""
-        if isinstance(c, str) and c.strip():
-            texts.append(c.strip())
-    return texts
-
 
 # =========================
 # SCORING
