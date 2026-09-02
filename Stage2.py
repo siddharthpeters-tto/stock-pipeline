@@ -2,6 +2,8 @@ import json
 import math
 from datetime import datetime, UTC
 
+from stock_research.scoring import cap_for_score, is_saturated
+
 # ==========================================
 # CONFIG
 # ==========================================

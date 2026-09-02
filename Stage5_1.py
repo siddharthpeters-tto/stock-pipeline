@@ -65,6 +65,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 
 from fmp_helpers import normalize_fmp_rows
+from stock_research.fmp_common import clamp, pct, safe_get, to_float
 
 current_year = datetime.now().year
 load_dotenv()
@@ -118,37 +119,6 @@ ENDPOINTS = {
 # HELPERS
 # =========================
 
-def safe_get(d: Dict[str, Any], *keys, default=None):
-    cur = d
-    for k in keys:
-        if not isinstance(cur, dict) or k not in cur:
-            return default
-        cur = cur[k]
-    return cur
-
-def clamp(x: float, lo: float, hi: float) -> float:
-    return max(lo, min(hi, x))
-
-def pct(a: Optional[float], b: Optional[float]) -> Optional[float]:
-    """Return (a-b)/abs(b) safely."""
-    if a is None or b is None:
-        return None
-    if b == 0:
-        return None
-    return (a - b) / abs(b)
-
-def to_float(x) -> Optional[float]:
-    try:
-        if x is None:
-            return None
-        if isinstance(x, (int, float)):
-            return float(x)
-        s = str(x).strip()
-        if s == "" or s.lower() == "nan":
-            return None
-        return float(s)
-    except Exception:
-        return None
 
 
 # =========================

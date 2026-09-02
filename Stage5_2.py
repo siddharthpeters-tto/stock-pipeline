@@ -99,6 +99,8 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 from fmp_helpers import normalize_fmp_rows, normalize_symbol, safe_float
+from stock_research.fmp_common import median, safe_div, to_float, clamp
+from stock_research.peer_data import peer_symbols_from_list
 
 # =========================
 # CONFIG
@@ -189,38 +191,6 @@ def write_cache(symbol: str, endpoint: str, data):
     except:
         pass
 
-def to_float(x) -> Optional[float]:
-    try:
-        if x is None:
-            return None
-        if isinstance(x, (int, float)):
-            return float(x)
-        s = str(x).strip()
-        if s == "" or s.lower() == "nan":
-            return None
-        return float(s)
-    except Exception:
-        return None
-
-
-def safe_div(a: Optional[float], b: Optional[float]) -> Optional[float]:
-    if a is None or b in (None, 0):
-        return None
-    return a / b
-
-def median(values: List[float]) -> Optional[float]:
-    vals = [v for v in values if v is not None and not math.isnan(v)]
-    if not vals:
-        return None
-    vals.sort()
-    n = len(vals)
-    mid = n // 2
-    if n % 2 == 1:
-        return vals[mid]
-    return (vals[mid - 1] + vals[mid]) / 2.0
-
-def clamp(x: float, lo: float, hi: float) -> float:
-    return max(lo, min(hi, x))
 
 
 # =========================
