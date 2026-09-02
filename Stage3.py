@@ -6,6 +6,8 @@ from datetime import datetime, UTC
 from dotenv import load_dotenv
 from tqdm import tqdm
 
+from fmp_helpers import normalize_fmp_rows
+
 
 # ==========================================
 # CONFIG
@@ -61,10 +63,11 @@ def fetch_profile(ticker):
         if r.status_code != 200:
             return {}
         data = r.json()
-        if isinstance(data, list) and len(data) > 0:
-            return data[0]
+        rows = normalize_fmp_rows(data)
+        if rows and isinstance(rows[0], dict):
+            return rows[0]
         return {}
-    except:
+    except Exception:
         return {}
 
 

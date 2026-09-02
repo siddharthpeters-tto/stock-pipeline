@@ -98,6 +98,8 @@ import requests
 from dotenv import load_dotenv
 from openai import OpenAI
 
+from fmp_helpers import normalize_fmp_rows, normalize_symbol, safe_float
+
 # =========================
 # CONFIG
 # =========================
@@ -165,8 +167,15 @@ def read_cache(symbol: str, endpoint: str):
 
     try:
         with open(path, "r") as f:
-            return json.load(f)
-    except:
+            payload = json.load(f)
+        if isinstance(payload, (list, dict)):
+            return payload
+        return None
+    except Exception:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
         return None
 
 
@@ -233,8 +242,13 @@ class FmpClient:
             try:
                 r = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
                 if r.status_code == 200:
+                    payload = r.json()
+                    if isinstance(payload, dict) and "Error Message" in payload:
+                        raise RuntimeError(payload.get("Error Message", "FMP error"))
                     time.sleep(SLEEP_BETWEEN_CALLS)
-                    return r.json()
+                    if isinstance(payload, list):
+                        return normalize_fmp_rows(payload)
+                    return payload
                 last_err = f"HTTP {r.status_code}: {r.text[:2000]}"
             except Exception as e:
                 last_err = str(e)
@@ -288,17 +302,51 @@ def fetch_latest_ratios(api: FmpClient, symbol: str):
 
     return {}
 
+def peer_symbols_from_list(peers, exclude_symbol: str = None):
+    cleaned = []
+    for item in peers or []:
+        if isinstance(item, dict):
+            candidate = item.get("symbol")
+        elif isinstance(item, str):
+            candidate = item
+        else:
+            candidate = None
+        symbol_value = normalize_symbol(candidate)
+        if not symbol_value:
+            continue
+        if exclude_symbol and symbol_value.upper() == exclude_symbol.upper():
+            continue
+        cleaned.append(symbol_value)
+    return cleaned[:MAX_PEERS]
+
+
 def fetch_stock_peers(api: FmpClient, symbol: str):
+
+    def clean_peer_list(items):
+        cleaned = []
+        for item in items or []:
+            if isinstance(item, dict):
+                symbol_value = normalize_symbol(item.get("symbol"))
+                if symbol_value:
+                    cleaned.append({"symbol": symbol_value})
+            elif isinstance(item, str):
+                symbol_value = normalize_symbol(item)
+                if symbol_value:
+                    cleaned.append({"symbol": symbol_value})
+        return cleaned
 
     cached = read_cache(symbol, "peers")
     if cached:
-        return cached
+        cleaned = clean_peer_list(cached)
+        if cleaned:
+            return cleaned
 
     data = api.get("/stock-peers", {"symbol": symbol})
 
     if isinstance(data, list):
-        write_cache(symbol, "peers", data)
-        return data
+        cleaned = clean_peer_list(data)
+        write_cache(symbol, "peers", cleaned)
+        return cleaned
 
     return []
 
@@ -752,7 +800,7 @@ def analyze_single_stock_stage5_2(symbol: str, level1_row: Dict[str, Any]) -> Di
     # PEER ANALYSIS
     # -------------------------------
 
-    peer_symbols = [p.get("symbol") for p in peers if p.get("symbol") != symbol][:MAX_PEERS]
+    peer_symbols = peer_symbols_from_list(peers, symbol)
 
     peer_ev_fcf_vals = []
     peer_roic_vals = []
@@ -847,7 +895,7 @@ def run_single_ticker(symbol: str):
         peers = fetch_stock_peers(api, symbol)
 
         # Build peer medians
-        peer_symbols = [p.get("symbol") for p in peers if p.get("symbol") != symbol][:MAX_PEERS]
+        peer_symbols = peer_symbols_from_list(peers, symbol)
 
         peer_ev_fcf_vals = []
         peer_roic_vals = []
@@ -1045,7 +1093,7 @@ def main():
             live_price = to_float(quote.get("price"))
             live_market_cap = to_float(quote.get("marketCap"))
             # Build peer medians
-            peer_symbols = [p.get("symbol") for p in peers if p.get("symbol") != symbol][:MAX_PEERS]
+            peer_symbols = peer_symbols_from_list(peers, symbol)
 
             peer_ev_fcf_vals = []
             peer_roic_vals = []

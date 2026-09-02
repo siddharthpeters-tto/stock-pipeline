@@ -2,12 +2,18 @@ import os
 import requests
 from dotenv import load_dotenv
 
+from fmp_helpers import normalize_fmp_rows, normalize_symbol
+
 load_dotenv()
 API_KEY = os.getenv("FMP_API_KEY")
 
 BASE_URL = "https://financialmodelingprep.com/stable/company-screener"
 
 #Universe criters 10B -> 10T, US listed, no ETFs/funds, actively trading
+
+def fetch(endpoint):
+    return fetch_universe(endpoint)
+
 
 def fetch_universe(exchange):
 
@@ -30,7 +36,20 @@ def fetch_universe(exchange):
         print(response.text)
         raise Exception("Failed to fetch universe")
 
-    return response.json()
+    payload = response.json()
+    if not isinstance(payload, list):
+        raise ValueError(f"Unexpected universe response shape for {exchange}: {type(payload).__name__}")
+
+    normalized = []
+    for item in normalize_fmp_rows(payload):
+        symbol = normalize_symbol(item.get("symbol"))
+        if symbol:
+            normalized.append({**item, "symbol": symbol})
+
+    if not normalized:
+        raise ValueError(f"Universe response for {exchange} was empty or invalid")
+
+    return normalized
 
 
 if __name__ == "__main__":

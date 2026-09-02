@@ -63,6 +63,9 @@ import requests
 from openai import OpenAI
 from dotenv import load_dotenv
 from datetime import datetime
+
+from fmp_helpers import normalize_fmp_rows
+
 current_year = datetime.now().year
 load_dotenv()
 
@@ -168,7 +171,12 @@ class ApiClient:
             try:
                 r = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
                 if r.status_code == 200:
-                    return r.json()
+                    payload = r.json()
+                    if isinstance(payload, dict) and "Error Message" in payload:
+                        raise RuntimeError(payload.get("Error Message", "FMP error"))
+                    if isinstance(payload, list):
+                        return normalize_fmp_rows(payload)
+                    return payload
                 last_err = f"HTTP {r.status_code}: {r.text[:2000]}"
             except Exception as e:
                 last_err = str(e)

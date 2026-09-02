@@ -1,0 +1,111 @@
+import importlib.util
+import json
+from pathlib import Path
+
+import pytest
+
+import fmp_helpers
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def load_module(module_name, relative_path):
+    spec = importlib.util.spec_from_file_location(module_name, str(ROOT / relative_path))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class DummyResponse:
+    def __init__(self, payload, status_code=200):
+        self._payload = payload
+        self.status_code = status_code
+        self.text = "error" if status_code != 200 else ""
+
+    def json(self):
+        return self._payload
+
+
+def test_fmp_helpers_normalize_and_validate_numeric_values():
+    rows = fmp_helpers.normalize_fmp_rows([
+        {"date": "2024-12-31", "revenue": 100.0},
+        {"date": None, "revenue": None},
+        {},
+        {"date": "2023-12-31", "revenue": 0},
+    ])
+    assert len(rows) == 2
+    assert rows[0]["revenue"] == 100.0
+    assert fmp_helpers.safe_ratio(10, 0) is None
+    assert fmp_helpers.safe_ratio(10, 5) == 2.0
+    assert fmp_helpers.safe_float("nan") is None
+
+
+def test_stage1_compute_metrics_rejects_invalid_quarter_data():
+    stage1 = load_module("stage1_hardening", "Stage1.py")
+    income = []
+    for i in range(12):
+        income.append({
+            "revenue": 500_000_000 - i * 8_000_000,
+            "operatingIncome": 80_000_000 - i * 3_000_000,
+            "grossProfit": 300_000_000 - i * 9_000_000,
+            "ebitda": 120_000_000 - i * 4_000_000,
+            "date": f"202{i % 10}-01-01",
+        })
+    balance = [{"totalDebt": 1_000_000_000, "cashAndCashEquivalents": 400_000_000}]
+    cashflow = []
+    for i in range(12):
+        cashflow.append({
+            "operatingCashFlow": 90_000_000 - i * 3_500_000,
+            "capitalExpenditure": -20_000_000 - i * 900_000,
+        })
+    assert stage1.compute_metrics(income, balance, cashflow) is not None
+
+    bad_income = [dict(row) for row in income]
+    bad_income[0]["revenue"] = None
+    assert stage1.compute_metrics(bad_income, balance, cashflow) is not None
+
+
+def test_stage3_fetch_profile_rejects_bad_profile_payloads(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "stage2_output.json").write_text(json.dumps({"results": [{"ticker": "AAPL"}]}) , encoding="utf-8")
+    stage3 = load_module("stage3_hardening", "Stage3.py")
+
+    class FakeSession:
+        def get(self, url, timeout=10):
+            return DummyResponse([{}, {"sector": "Technology"}])
+
+    monkeypatch.setattr(stage3, "session", FakeSession())
+    assert stage3.fetch_profile("AAPL") == {"sector": "Technology"}
+
+
+def test_stage5_2_peer_sets_are_validated(monkeypatch):
+    stage5_2 = load_module("stage5_2_hardening", "Stage5_2.py")
+
+    class FakeApi:
+        def get(self, path, params):
+            if path == "/stock-peers":
+                return [
+                    {"symbol": "MSFT"},
+                    {"symbol": None},
+                    {"symbol": "   "},
+                    {"symbol": "NVDA"},
+                ]
+            return []
+
+    peers = stage5_2.fetch_stock_peers(FakeApi(), "AAPL")
+    assert [p["symbol"] for p in peers] == ["MSFT", "NVDA"]
+
+
+def test_build_universe_rejects_invalid_response_shape(monkeypatch):
+    build_universe = load_module("build_universe_hardening", "buildUniverse.py")
+
+    class FakeResponse:
+        status_code = 200
+        text = "ok"
+
+        def json(self):
+            return {"error": "bad payload"}
+
+    monkeypatch.setattr(build_universe.requests, "get", lambda *args, **kwargs: FakeResponse())
+    with pytest.raises(ValueError):
+        build_universe.fetch("NASDAQ")
