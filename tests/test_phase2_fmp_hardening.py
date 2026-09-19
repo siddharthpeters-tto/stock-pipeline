@@ -156,6 +156,31 @@ def test_stage5_2_reuses_supplied_target_fundamentals(monkeypatch, tmp_path):
     assert result["metrics"]["ev_to_ebitda"] == pytest.approx(38.0)
 
 
+def test_stage5_2_without_shared_fundamentals_keeps_fetch_fallback(monkeypatch):
+    stage5_2 = load_module("stage5_2_fallback", "Stage5_2.py")
+    stage5_2.RUN_GPT = False
+    fetched = []
+
+    def record_fetch(name, value):
+        def fetch(_api, symbol):
+            assert symbol == "AAPL"
+            fetched.append(name)
+            return value
+        return fetch
+
+    monkeypatch.setattr(stage5_2, "fetch_latest_key_metrics", record_fetch("key_metrics", {"returnOnInvestedCapital": 0.22}))
+    monkeypatch.setattr(stage5_2, "fetch_latest_ratios", record_fetch("ratios", {}))
+    monkeypatch.setattr(stage5_2, "fetch_latest_income_statement", record_fetch("income", {"ebitda": 80_000_000.0, "revenue": 390_000_000.0, "eps": 6.0}))
+    monkeypatch.setattr(stage5_2, "fetch_latest_cashflow_statement", record_fetch("cashflow", {"freeCashFlow": 65_000_000.0}))
+    monkeypatch.setattr(stage5_2, "fetch_latest_balance_sheet", record_fetch("balance", {"totalDebt": 120_000_000.0, "cashAndCashEquivalents": 80_000_000.0}))
+    monkeypatch.setattr(stage5_2, "fetch_stock_peers", lambda _api, _symbol: [])
+    monkeypatch.setattr(stage5_2, "fetch_live_quote", lambda _api, _symbol: {"price": 200.0, "marketCap": 3_000_000_000.0})
+
+    stage5_2.analyze_single_stock_stage5_2("AAPL", {"ticker": "AAPL"})
+
+    assert set(fetched) == {"key_metrics", "ratios", "income", "cashflow", "balance"}
+
+
 def test_stage1_compute_metrics_rejects_invalid_quarter_data():
     stage1 = load_module("stage1_hardening", "Stage1.py")
     income = []
