@@ -363,10 +363,32 @@ def fetch_latest_balance_sheet(api: FmpClient, symbol: str):
 
     if isinstance(data, list) and data:
         result = data[0]
-        write_cache(symbol, "balance", result)
+        write_cache(symbol, "balance", result, params)
         return result
 
     return {}
+
+
+def latest_target_fundamentals(bundle: Optional[Dict[str, Any]]) -> Optional[Dict[str, Dict[str, Any]]]:
+    if not isinstance(bundle, dict):
+        return None
+
+    result = {}
+    for source in ("income", "cashflow", "balance", "ratios", "key_metrics"):
+        value = bundle.get(source)
+        if isinstance(value, list):
+            rows = [row for row in value if isinstance(row, dict)]
+            rows.sort(
+                key=lambda row: row.get("date") or row.get("fiscalYear") or "",
+                reverse=True,
+            )
+            result[source] = rows[0] if rows else {}
+        elif isinstance(value, dict):
+            result[source] = value
+        else:
+            result[source] = {}
+
+    return result
 
 
 
@@ -741,34 +763,53 @@ def investment_view(quality, valuation):
 
     return "Unclear"
 
-def analyze_single_stock_stage5_2(symbol: str, level1_row: Dict[str, Any]) -> Dict[str, Any]:
+def analyze_single_stock_stage5_2(
+    symbol: str,
+    level1_row: Dict[str, Any],
+    target_fundamentals: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
 
     api = FmpClient(BASE_URL, FMP_API_KEY)
+
+    target = latest_target_fundamentals(
+        target_fundamentals or level1_row.get("target_fundamentals")
+    )
 
     # -------------------------------
     # PARALLEL CORE DATA FETCH
     # -------------------------------
 
-    with ThreadPoolExecutor(max_workers=7) as executor:
+    if target is not None:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            peers_future = executor.submit(fetch_stock_peers, api, symbol)
+            quote_future = executor.submit(fetch_live_quote, api, symbol)
+            peers = peers_future.result()
+            quote = quote_future.result()
 
-        futures = {
-            "km": executor.submit(fetch_latest_key_metrics, api, symbol),
-            "rat": executor.submit(fetch_latest_ratios, api, symbol),
-            "peers": executor.submit(fetch_stock_peers, api, symbol),
-            "quote": executor.submit(fetch_live_quote, api, symbol),
-            "inc": executor.submit(fetch_latest_income_statement, api, symbol),
-            "cf": executor.submit(fetch_latest_cashflow_statement, api, symbol),
-            "bs": executor.submit(fetch_latest_balance_sheet, api, symbol)
-        }
+        km = target["key_metrics"]
+        rat = target["ratios"]
+        inc = target["income"]
+        cf = target["cashflow"]
+        bs = target["balance"]
+    else:
+        with ThreadPoolExecutor(max_workers=7) as executor:
+            futures = {
+                "km": executor.submit(fetch_latest_key_metrics, api, symbol),
+                "rat": executor.submit(fetch_latest_ratios, api, symbol),
+                "peers": executor.submit(fetch_stock_peers, api, symbol),
+                "quote": executor.submit(fetch_live_quote, api, symbol),
+                "inc": executor.submit(fetch_latest_income_statement, api, symbol),
+                "cf": executor.submit(fetch_latest_cashflow_statement, api, symbol),
+                "bs": executor.submit(fetch_latest_balance_sheet, api, symbol)
+            }
 
-        km = futures["km"].result()
-        rat = futures["rat"].result()
-        peers = futures["peers"].result()
-
-        quote = futures["quote"].result()
-        inc = futures["inc"].result()
-        cf = futures["cf"].result()
-        bs = futures["bs"].result()
+            km = futures["km"].result()
+            rat = futures["rat"].result()
+            peers = futures["peers"].result()
+            quote = futures["quote"].result()
+            inc = futures["inc"].result()
+            cf = futures["cf"].result()
+            bs = futures["bs"].result()
 
 
     # -------------------------------
@@ -1074,8 +1115,9 @@ def main():
         print(f"[{idx}/{len(clean)}] Stage5-2 processing {symbol}...")
 
         try:
-            km = fetch_latest_key_metrics(api, symbol)
-            rat = fetch_latest_ratios(api, symbol)
+            target_fundamentals = latest_target_fundamentals(r.get("target_fundamentals"))
+            km = target_fundamentals["key_metrics"] if target_fundamentals is not None else fetch_latest_key_metrics(api, symbol)
+            rat = target_fundamentals["ratios"] if target_fundamentals is not None else fetch_latest_ratios(api, symbol)
             peers = fetch_stock_peers(api, symbol)
             quote = fetch_live_quote(api, symbol)
 

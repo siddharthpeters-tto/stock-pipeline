@@ -207,6 +207,24 @@ def cagr(new: float, old: float, years: float) -> Optional[float]:
         return None
     return (new / old) ** (1 / years) - 1
 
+
+def extract_latest_fundamentals(bundle: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    latest = {}
+    for source in ("income", "cashflow", "balance", "ratios", "key_metrics"):
+        rows = bundle.get(source, [])
+        if isinstance(rows, list):
+            rows = [row for row in rows if isinstance(row, dict)]
+            rows.sort(
+                key=lambda row: row.get("date") or row.get("fiscalYear") or "",
+                reverse=True,
+            )
+            latest[source] = rows[0] if rows else {}
+        elif isinstance(rows, dict):
+            latest[source] = rows
+        else:
+            latest[source] = {}
+    return latest
+
 def compute_quant_features(bundle: Dict[str, Any]) -> Dict[str, Any]:
     import statistics
 
@@ -515,6 +533,7 @@ def analyze_single_stock_stage5_1(symbol: str) -> Dict[str, Any]:
     return {
         "ticker": symbol,
         **quant,
+        "target_fundamentals": extract_latest_fundamentals(quant_bundle),
         "kill_flags": flags,
         "level1_score": lvl1_score,
         "gpt": gpt_out,

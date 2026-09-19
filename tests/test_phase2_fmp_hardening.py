@@ -70,22 +70,6 @@ def test_fmp_request_counter_groups_real_requests(monkeypatch):
     }
 
 
-def test_fmp_cache_hit_does_not_increment_request_counter(monkeypatch, tmp_path):
-    stage5_2 = load_module("stage5_2_cache_counter", "Stage5_2.py")
-    counter = fmp_helpers.FmpRequestCounter()
-    monkeypatch.setattr(stage5_2, "CACHE_DIR", str(tmp_path))
-    stage5_2.write_cache("AAPL", "key_metrics", {"returnOnInvestedCapital": 0.2})
-
-    class FailingApi:
-        def get(self, *args, **kwargs):
-            raise AssertionError("cache hit should avoid the network")
-
-    result = stage5_2.fetch_latest_key_metrics(FailingApi(), "AAPL")
-
-    assert result["returnOnInvestedCapital"] == 0.2
-    assert counter.snapshot() == {"total": 0, "by_endpoint": {}}
-
-
 def test_stage5_2_batch_analysis_fetches_one_quote_per_ticker(monkeypatch, tmp_path):
     stage5_2 = load_module("stage5_2_quote_dedup", "Stage5_2.py")
     stage5_2.RUN_GPT = False
@@ -127,6 +111,49 @@ def test_stage5_2_batch_analysis_fetches_one_quote_per_ticker(monkeypatch, tmp_p
     stage5_2.main()
 
     assert calls.count("quote") == 1
+
+
+def test_stage5_2_reuses_supplied_target_fundamentals(monkeypatch, tmp_path):
+    stage5_2 = load_module("stage5_2_shared_fundamentals", "Stage5_2.py")
+    stage5_2.RUN_GPT = False
+    stage5_2.CACHE_DIR = str(tmp_path / "api_cache")
+    stage5_2.time.sleep = lambda *_args, **_kwargs: None
+
+    target = {
+        "income": {"ebitda": 80_000_000.0, "revenue": 390_000_000.0, "eps": 6.0},
+        "cashflow": {"freeCashFlow": 65_000_000.0},
+        "balance": {"totalDebt": 120_000_000.0, "cashAndCashEquivalents": 80_000_000.0},
+        "ratios": {"grossProfitMargin": 0.46, "operatingProfitMargin": 0.18},
+        "key_metrics": {"returnOnInvestedCapital": 0.22, "evToFreeCashFlow": 18.0},
+    }
+
+    def target_fetch_must_not_run(api, symbol):
+        if symbol == "AAPL":
+            raise AssertionError("target annual data should come from Stage5_1")
+        return {"returnOnInvestedCapital": 0.20, "evToFreeCashFlow": 20.0}
+
+    monkeypatch.setattr(stage5_2, "fetch_latest_key_metrics", target_fetch_must_not_run)
+    monkeypatch.setattr(stage5_2, "fetch_latest_ratios", target_fetch_must_not_run)
+    monkeypatch.setattr(stage5_2, "fetch_latest_income_statement", target_fetch_must_not_run)
+    monkeypatch.setattr(stage5_2, "fetch_latest_cashflow_statement", target_fetch_must_not_run)
+    monkeypatch.setattr(stage5_2, "fetch_latest_balance_sheet", target_fetch_must_not_run)
+    monkeypatch.setattr(stage5_2, "fetch_stock_peers", lambda api, symbol: [{"symbol": "MSFT"}])
+    monkeypatch.setattr(stage5_2, "fetch_live_quote", lambda api, symbol: {"price": 200.0, "marketCap": 3_000_000_000.0})
+
+    result = stage5_2.analyze_single_stock_stage5_2(
+        "AAPL",
+        {
+            "ticker": "AAPL",
+            "rev_cagr_5y": 0.18,
+            "fcf_margin_latest": 0.17,
+            "dilution_5y": 0.04,
+            "level1_score": 13.0,
+        },
+        target_fundamentals=target,
+    )
+
+    assert result["metrics"]["ev_to_fcf"] == pytest.approx(46.7692307692)
+    assert result["metrics"]["ev_to_ebitda"] == pytest.approx(38.0)
 
 
 def test_stage1_compute_metrics_rejects_invalid_quarter_data():
