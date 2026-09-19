@@ -1072,10 +1072,6 @@ def main():
             continue
 
         print(f"[{idx}/{len(clean)}] Stage5-2 processing {symbol}...")
-        
-        quote = fetch_live_quote(api, symbol)
-        live_price = to_float(quote.get("price"))
-        live_market_cap = to_float(quote.get("marketCap"))
 
         try:
             km = fetch_latest_key_metrics(api, symbol)

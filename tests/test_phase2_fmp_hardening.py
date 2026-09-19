@@ -86,6 +86,49 @@ def test_fmp_cache_hit_does_not_increment_request_counter(monkeypatch, tmp_path)
     assert counter.snapshot() == {"total": 0, "by_endpoint": {}}
 
 
+def test_stage5_2_batch_analysis_fetches_one_quote_per_ticker(monkeypatch, tmp_path):
+    stage5_2 = load_module("stage5_2_quote_dedup", "Stage5_2.py")
+    stage5_2.RUN_GPT = False
+    stage5_2.TOP_N = None
+    stage5_2.CACHE_DIR = str(tmp_path / "api_cache")
+    stage5_2.INPUT_LEVEL1_JSON = str(tmp_path / "level1.json")
+    stage5_2.OUT_JSON = str(tmp_path / "level2.json")
+    stage5_2.OUT_CSV = str(tmp_path / "level2.csv")
+    stage5_2.time.sleep = lambda *_args, **_kwargs: None
+    (tmp_path / "level1.json").write_text(
+        json.dumps([{
+            "ticker": "AAPL",
+            "company_name": "Apple Inc.",
+            "level1_score": 13.0,
+            "rev_cagr_5y": 0.18,
+            "fcf_margin_latest": 0.17,
+            "dilution_5y": 0.04,
+        }]),
+        encoding="utf-8",
+    )
+
+    calls = []
+
+    def fake_get(url, params=None, timeout=None):
+        endpoint = url.rstrip("/").split("/")[-1]
+        calls.append(endpoint)
+        responses = {
+            "quote": [{"price": 200.0, "marketCap": 3_000_000_000.0}],
+            "key-metrics": [{"returnOnInvestedCapital": 0.22, "evToFreeCashFlow": 18.0}],
+            "ratios": [{"grossProfitMargin": 0.46, "operatingProfitMargin": 0.18}],
+            "income-statement": [{"ebitda": 80_000_000.0, "revenue": 390_000_000.0, "eps": 6.0}],
+            "cash-flow-statement": [{"freeCashFlow": 65_000_000.0}],
+            "balance-sheet-statement": [{"totalDebt": 120_000_000.0, "cashAndCashEquivalents": 80_000_000.0}],
+            "stock-peers": [{"symbol": "MSFT"}, {"symbol": "NVDA"}],
+        }
+        return DummyResponse(responses[endpoint])
+
+    monkeypatch.setattr(stage5_2.requests, "get", fake_get)
+    stage5_2.main()
+
+    assert calls.count("quote") == 1
+
+
 def test_stage1_compute_metrics_rejects_invalid_quarter_data():
     stage1 = load_module("stage1_hardening", "Stage1.py")
     income = []
