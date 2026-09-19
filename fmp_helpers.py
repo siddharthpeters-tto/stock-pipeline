@@ -1,5 +1,23 @@
 import math
+from collections import Counter
 from typing import Any, Dict, Iterable, List, Optional
+
+
+class FmpRequestCounter:
+    def __init__(self):
+        self.total = 0
+        self.by_endpoint = Counter()
+
+    def record(self, path: str) -> None:
+        endpoint = path.rstrip("/").split("/")[-1]
+        self.total += 1
+        self.by_endpoint[endpoint] += 1
+
+    def snapshot(self) -> Dict[str, Any]:
+        return {
+            "total": self.total,
+            "by_endpoint": dict(self.by_endpoint),
+        }
 
 
 def safe_float(value: Any) -> Optional[float]:

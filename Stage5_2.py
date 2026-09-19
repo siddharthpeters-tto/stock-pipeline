@@ -98,7 +98,7 @@ import requests
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from fmp_helpers import normalize_fmp_rows, normalize_symbol, safe_float
+from fmp_helpers import FmpRequestCounter, normalize_fmp_rows, normalize_symbol, safe_float
 from stock_research.fmp_common import median, safe_div, to_float, clamp
 from stock_research.peer_data import peer_symbols_from_list
 
@@ -201,6 +201,7 @@ def write_cache(symbol: str, endpoint: str, data):
 class FmpClient:
     base_url: str
     api_key: str
+    request_counter: Optional[FmpRequestCounter] = None
 
     def get(self, path: str, params: Dict[str, Any]) -> Any:
         url = self.base_url.rstrip("/") + path
@@ -210,6 +211,8 @@ class FmpClient:
         last_err = None
         for attempt in range(1, MAX_RETRIES + 1):
             try:
+                if self.request_counter is not None:
+                    self.request_counter.record(path)
                 r = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
                 if r.status_code == 200:
                     payload = r.json()

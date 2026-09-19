@@ -62,7 +62,7 @@ import requests
 from dotenv import load_dotenv
 from datetime import datetime
 
-from fmp_helpers import normalize_fmp_rows
+from fmp_helpers import FmpRequestCounter, normalize_fmp_rows
 from stock_research.fmp_common import clamp, pct, safe_get, to_float
 
 current_year = datetime.now().year
@@ -106,6 +106,7 @@ SLEEP_BETWEEN_TICKERS = 1.5
 class ApiClient:
     base_url: str
     api_key: str
+    request_counter: Optional[FmpRequestCounter] = None
 
     def get(self, path: str, params: Dict[str, Any]) -> Any:
         url = self.base_url.rstrip("/") + path
@@ -116,6 +117,8 @@ class ApiClient:
 
         for attempt in range(1, MAX_RETRIES + 1):
             try:
+                if self.request_counter is not None:
+                    self.request_counter.record(path)
                 r = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
                 if r.status_code == 200:
                     payload = r.json()

@@ -40,6 +40,52 @@ def test_fmp_helpers_normalize_and_validate_numeric_values():
     assert fmp_helpers.safe_float("nan") is None
 
 
+def test_fmp_request_counter_groups_real_requests(monkeypatch):
+    stage5_2 = load_module("stage5_2_request_counter", "Stage5_2.py")
+    counter = fmp_helpers.FmpRequestCounter()
+    calls = []
+
+    class SuccessfulResponse:
+        status_code = 200
+        text = ""
+
+        def json(self):
+            return []
+
+    def fake_get(url, params=None, timeout=None):
+        calls.append(url)
+        return SuccessfulResponse()
+
+    monkeypatch.setattr(stage5_2.requests, "get", fake_get)
+    client = stage5_2.FmpClient("https://example.com/stable", "key", counter)
+
+    client.get("/income-statement", {"symbol": "AAPL"})
+    client.get("/income-statement", {"symbol": "MSFT"})
+    client.get("/quote", {"symbol": "AAPL"})
+
+    assert len(calls) == 3
+    assert counter.snapshot() == {
+        "total": 3,
+        "by_endpoint": {"income-statement": 2, "quote": 1},
+    }
+
+
+def test_fmp_cache_hit_does_not_increment_request_counter(monkeypatch, tmp_path):
+    stage5_2 = load_module("stage5_2_cache_counter", "Stage5_2.py")
+    counter = fmp_helpers.FmpRequestCounter()
+    monkeypatch.setattr(stage5_2, "CACHE_DIR", str(tmp_path))
+    stage5_2.write_cache("AAPL", "key_metrics", {"returnOnInvestedCapital": 0.2})
+
+    class FailingApi:
+        def get(self, *args, **kwargs):
+            raise AssertionError("cache hit should avoid the network")
+
+    result = stage5_2.fetch_latest_key_metrics(FailingApi(), "AAPL")
+
+    assert result["returnOnInvestedCapital"] == 0.2
+    assert counter.snapshot() == {"total": 0, "by_endpoint": {}}
+
+
 def test_stage1_compute_metrics_rejects_invalid_quarter_data():
     stage1 = load_module("stage1_hardening", "Stage1.py")
     income = []
