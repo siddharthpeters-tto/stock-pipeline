@@ -2,7 +2,6 @@ requests
 pandas
 numpy
 python-dotenv
-openai
 flask
 gunicorn
 pytest

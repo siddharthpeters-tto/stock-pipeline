@@ -378,8 +378,6 @@ def test_stage5_2_valuation_bucket_peer_and_fallback(monkeypatch, tmp_path):
         return []
 
     monkeypatch.setattr(stage5_2.FmpClient, "get", fake_get)
-    monkeypatch.setattr(stage5_2, "RUN_GPT", False)
-
     level1 = make_stage5_2_level1_row()
     metrics = stage5_2.build_value_quality_inputs(level1, {"returnOnInvestedCapital": 0.22}, {"grossProfitMargin": 0.46})
     assert stage5_2.quality_bucket(metrics) == "high_quality"
@@ -395,28 +393,6 @@ def test_stage5_2_valuation_bucket_peer_and_fallback(monkeypatch, tmp_path):
     result = stage5_2.analyze_single_stock_stage5_2("AAPL", level1)
     assert result["quadrant"] in {"HQ_FairValue", "HQ_Cheap", "HQ_Expensive"}
     assert result["quality_adjusted_value_score"] > 0
-
-
-def test_stage5_2_parse_fallback_and_short_context(monkeypatch):
-    set_env(monkeypatch)
-    stage5_2 = load_module("stage5_2_parse_under_test", "Stage5_2.py")
-
-    fake_client = SimpleNamespace(
-        chat=SimpleNamespace(
-            completions=SimpleNamespace(
-                create=lambda **kwargs: SimpleNamespace(
-                    choices=[SimpleNamespace(message=SimpleNamespace(content="{not json"))]
-                )
-            )
-        )
-    )
-    monkeypatch.setattr(stage5_2, "client", fake_client)
-    parsed = stage5_2.call_gpt_nuance("AAPL", "A short context")
-    assert parsed["_parse_error"] is True
-
-    short_context = "too short"
-    assert len(stage5_2.build_gpt_context({}, {}, [], {"peer_ev_to_fcf": None, "peer_roic": None})) >= 0
-    assert len(short_context) < stage5_2.MIN_GPT_CONTEXT_CHARS
 
 
 def test_negative_valuation_metrics_do_not_create_positive_cheapness_signal(monkeypatch):
@@ -488,14 +464,14 @@ def test_generate_report_persistence_and_top_candidates(monkeypatch, tmp_path):
             "quality_adjusted_value_score": 14.0,
             "quadrant": "HQ_Cheap",
             "bucket": "high_conviction_growth",
-            "gpt_nuance": {"decision_tilt": "strong_buy"},
+            "investment_view": "Strong Buy",
         },
         {
             "ticker": "MSFT",
             "quality_adjusted_value_score": 9.0,
             "quadrant": "HQ_Expensive",
             "bucket": "high_conviction_growth",
-            "gpt_nuance": {"decision_tilt": "buy"},
+            "investment_view": "Watch for Pullback",
         },
     ]
     (tmp_path / "level2_results.json").write_text(json.dumps(payload), encoding="utf-8")
@@ -550,10 +526,8 @@ def test_end_to_end_stage_pipeline_regression_fixture(monkeypatch, tmp_path):
     assert stage5_1_result["ticker"] == "AAPL"
 
     stage5_2 = load_module("stage5_2_e2e", "Stage5_2.py")
-    monkeypatch.setattr(stage5_2, "RUN_GPT", False)
     monkeypatch.setattr(stage5_2.FmpClient, "get", fake_get)
     stage5_2_result = stage5_2.analyze_single_stock_stage5_2("AAPL", level1_row)
-    stage5_2_result.setdefault("gpt_nuance", {"decision_tilt": "strong_buy"})
     stage5_2_result.setdefault("bucket", "speculative_asymmetric")
     assert stage5_2_result["quality_bucket"] in {"high_quality", "mid_quality", "low_quality"}
     assert stage5_2_result["quadrant"]

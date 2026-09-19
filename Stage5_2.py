@@ -1,5 +1,5 @@
 """
-Stage5-2.py — Dynamic Quality-Adjusted Valuation + Peer Context + GPT Nuance
+Stage5-2.py — Dynamic Quality-Adjusted Valuation + Peer Context
 
 Purpose:
     Converts Stage5-1 structural outputs into real-time valuation decisions
@@ -9,7 +9,7 @@ Inputs:
     - level1_results.json (output of Stage5-1 structural scoring)
 
 Outputs:
-    - level_2_results.json (ranked results with valuation + GPT layer)
+    - level_2_results.json (ranked deterministic valuation results)
     - level_2_ranked.csv
 
 What it does:
@@ -59,12 +59,6 @@ What it does:
 
     8) Generates composite Quality-Adjusted Value (QAV) score.
 
-    9) Runs GPT Nuance Layer (optional):
-        - Uses only computed metrics and peer medians
-        - No external data
-        - No hallucination risk
-        - Produces structured decision tilt
-
 Design Philosophy:
 
     - Financial quality changes quarterly.
@@ -81,7 +75,7 @@ Notes:
     - Designed for structural compounder discovery, not cyclical peaks.
 
 Requirements:
-    pip install requests python-dotenv openai
+    pip install requests python-dotenv
 """
 
 import os
@@ -96,7 +90,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 import requests
 from dotenv import load_dotenv
-from openai import OpenAI
 
 from fmp_helpers import FmpRequestCounter, normalize_fmp_rows, normalize_symbol, safe_float
 from stock_research.fmp_common import median, safe_div, to_float, clamp
@@ -110,7 +103,6 @@ load_dotenv()
 
 BASE_URL = os.getenv("FMP_BASE_URL", "https://financialmodelingprep.com/stable")
 FMP_API_KEY = os.getenv("FMP_API_KEY")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 CACHE_DIR = "api_cache"
 CACHE_TTL = 900  # seconds (15 minutes)
 
@@ -118,11 +110,6 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 if not FMP_API_KEY:
     raise RuntimeError("Missing FMP_API_KEY in environment/.env")
-if not OPENAI_API_KEY:
-    raise RuntimeError("Missing OPENAI_API_KEY in environment/.env")
-
-client = OpenAI(api_key=OPENAI_API_KEY)
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 # Inputs / outputs
 INPUT_LEVEL1_JSON = os.getenv("INPUT_LEVEL1_JSON", "level1_results.json")
@@ -141,11 +128,6 @@ MAX_RETRIES = 3
 # Peers
 MAX_PEERS = 8        # cap peers to avoid excessive API usage
 FETCH_PEER_METRICS = True  # if False, we only store peer tickers (still safe)
-
-# GPT usage guardrails
-RUN_GPT = True
-MIN_GPT_CONTEXT_CHARS = 200  # if less, skip GPT to prevent hallucination
-
 
 # =========================
 # HELPERS
@@ -623,107 +605,6 @@ def score_quality_adjusted_value(m: Dict[str, Any], peer_medians: Dict[str, Opti
 
 
 # =========================
-# GPT (Nuance Only, No Hallucination)
-# =========================
-
-GPT_SCHEMA = """
-Return JSON ONLY (no markdown, no commentary) with this exact schema:
-
-{
-  "business_quality_view": "high|medium|low|unclear",
-  "valuation_view": "very_cheap|cheap|fair|expensive|very_expensive|unclear",
-  "quality_vs_price_alignment": "underpriced_quality|fairly_priced_quality|overpriced_quality|value_trap_risk|unclear",
-
-  "two_strengths": [
-    "string",
-    "string"
-  ],
-
-  "two_metric_based_risks": [
-    "string",
-    "string"
-  ],
-
-  "what_must_be_true_for_upside": "string",
-  "what_would_break_the_thesis": "string",
-
-  "decision_tilt": "strong_buy|buy|hold|avoid|unclear",
-  "confidence_1_to_5": 1
-}
-
-Rules:
-- Strengths must reference metrics that are superior vs peers or internally strong.
-- Risks must identify downside fragility implied by the data.
-- Do NOT misclassify strong metrics as risks.
-- If a metric is extremely favorable (e.g., very low EV/FCF, high ROIC), risk must discuss sustainability or cyclicality — not claim it is weak.
-- If no clear downside risk is visible from metrics, return ["unclear"].
-- Use ONLY provided data.
-- Do NOT invent TAM, competitors, macro factors, or qualitative assumptions.
-- Keep strings concise (<= 25 words).
-- Do NOT mention market share unless explicitly provided.
-- Do NOT infer competitive positioning beyond peer-relative metrics.
-- If cycle_distortion_flag is True or profitability volatility is elevated, risk must explicitly reference potential earnings normalization.
-
-"""
-
-
-def call_gpt_nuance(symbol: str, context: str) -> Dict[str, Any]:
-    prompt = f"""
-You are an institutional portfolio analyst. Your job is to add nuance WITHOUT adding new facts.
-
-{GPT_SCHEMA}
-
-COMPANY: {symbol}
-
-DATA (the only allowed source):
-{context}
-""".strip()
-
-    resp = client.chat.completions.create(
-        model=OPENAI_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0
-    )
-    raw = resp.choices[0].message.content.strip()
-    try:
-        return json.loads(raw)
-    except Exception:
-        return {"_parse_error": True, "_raw": raw}
-
-
-def build_gpt_context(level1_row: Dict[str, Any], m: Dict[str, Any], peers: List[Dict[str, Any]], peer_medians: Dict[str, Any]) -> str:
-    # Profile description (from Stage5-1 GPT input source)
-    profile_desc = ""
-    # Stage5-1 stores GPT output blob; but we want the profile description, not GPT output.
-    # If you stored it in Stage5-1, use it; otherwise we keep it minimal.
-    # You can optionally store profile description in Stage5-1 and carry it over.
-    profile_desc = level1_row.get("profile_description", "") or ""
-
-    peer_symbols = [p.get("symbol") for p in peers if isinstance(p, dict) and p.get("symbol")]
-    # If peers list includes self only, treat as unavailable
-    if len(peer_symbols) <= 1:
-        peer_symbols = []
-
-    lines = []
-    lines.append(f"Profile description (may be empty if not stored in Stage5-1): {profile_desc[:800]}")
-    lines.append("")
-    lines.append("Core metrics:")
-    for k in [
-        "rev_cagr_5y","roic","fcf_margin","dilution_5y","sbc_to_revenue",
-        "ev_to_fcf","ev_to_ebitda","ev_to_sales","fcf_yield","net_debt_to_ebitda"
-    ]:
-        lines.append(f"- {k}: {m.get(k)}")
-    lines.append("")
-    lines.append("Peers (only use these; if empty => peers unavailable):")
-    lines.append(str(peer_symbols))
-    lines.append("")
-    lines.append("Peer medians (if available):")
-    for k,v in peer_medians.items():
-        lines.append(f"- {k}: {v}")
-
-    return "\n".join(lines)
-
-
 # =========================
 # IO
 # =========================
@@ -901,13 +782,6 @@ def analyze_single_stock_stage5_2(
 
     investment_signal = investment_view(q_bucket, v_bucket)
 
-    gpt = None
-
-    if RUN_GPT:
-        context = build_gpt_context(level1_row, m, peers, peer_medians)
-        if context and len(context.strip()) >= MIN_GPT_CONTEXT_CHARS:
-            gpt = call_gpt_nuance(symbol, context)
-
     return {
         "ticker": symbol,
         "quality_bucket": q_bucket,
@@ -918,7 +792,6 @@ def analyze_single_stock_stage5_2(
         "metrics": m,
         "peer_medians": peer_medians,
         "peer_symbols": peer_symbols,
-        "gpt": gpt
     }
 
 
@@ -1027,70 +900,6 @@ def run_single_ticker(symbol: str):
         print(f"Quadrant: {quad}")
         print(f"Quality-Adjusted Score: {score}")
         print("===================================")
-
-        # =============================
-        # GPT + DURABILITY OVERLAY
-        # =============================
-
-        gpt = None
-
-        if RUN_GPT:
-            context = build_gpt_context({}, m, peers, peer_medians)
-            if context and len(context.strip()) >= MIN_GPT_CONTEXT_CHARS:
-                gpt = call_gpt_nuance(symbol, context)
-            else:
-                gpt = {"skipped": True, "reason": "insufficient_context"}
-
-        # ---------------------------------
-        # DURABILITY OVERLAY (Underpriced Quality focus)
-        # ---------------------------------
-        try:
-            cycle_flag = level1_row.get("cycle_distortion_flag")
-            roic_std = level1_row.get("roic_std_5y")
-            fcf_std = level1_row.get("fcf_margin_std_5y")
-
-
-            dilution = m.get("dilution_5y")
-
-            durability_penalty = False
-
-            # High volatility = not a durable compounder
-            if roic_std is not None and roic_std > 0.15:
-                durability_penalty = True
-            if fcf_std is not None and fcf_std > 0.10:
-                durability_penalty = True
-
-            # Cyclical distortion detected in Stage5-1
-            if cycle_flag is True:
-                durability_penalty = True
-
-            # Excessive dilution
-            if dilution is not None and dilution > 0.50:
-                durability_penalty = True
-
-            # Apply overlay only if GPT labeled strong_buy
-            if durability_penalty and isinstance(gpt, dict) and gpt.get("decision_tilt") == "strong_buy":
-                gpt["decision_tilt"] = "buy"
-
-                if isinstance(gpt.get("two_metric_based_risks"), list):
-                    gpt["two_metric_based_risks"] = (gpt["two_metric_based_risks"][:1] + [
-                        "Durability risk: volatility/cycle flags suggest earnings may normalize; avoid extrapolating peak profitability."
-                    ])[:2]
-                else:
-                    gpt["two_metric_based_risks"] = [
-                        "Durability risk: volatility/cycle flags suggest earnings may normalize; avoid extrapolating peak profitability."
-                    ]
-
-                gpt["confidence_1_to_5"] = min(int(gpt.get("confidence_1_to_5", 3)), 3)
-
-        except Exception:
-            pass
-
-        # Print final GPT output
-        if RUN_GPT and gpt:
-            print("\nGPT Decision Layer:")
-            print(json.dumps(gpt, indent=2))
-
 
     except Exception as e:
         print(f"Error processing {symbol}: {e}")
@@ -1212,65 +1021,6 @@ def main():
 
 
 
-            # =============================
-            # GPT + DURABILITY OVERLAY
-            # =============================
-
-            gpt = None
-            if RUN_GPT:
-                context = build_gpt_context(r, m, peers, peer_medians)
-                if context and len(context.strip()) >= MIN_GPT_CONTEXT_CHARS:
-                    gpt = call_gpt_nuance(symbol, context)
-                else:
-                    gpt = {"skipped": True, "reason": "insufficient_context"}
-
-            # ---------------------------------
-            # DURABILITY OVERLAY (Underpriced Quality focus)
-            # Prevent fragile names from being labeled "strong_buy"
-            # ---------------------------------
-            try:
-                cycle_flag = r.get("cycle_distortion_flag")
-                roic_std = r.get("roic_std_5y")
-                fcf_std = r.get("fcf_margin_std_5y")
-
-                dilution = m.get("dilution_5y")
-
-                durability_penalty = False
-
-                # High volatility = not a durable compounder
-                if roic_std is not None and roic_std > 0.15:
-                    durability_penalty = True
-                if fcf_std is not None and fcf_std > 0.10:
-                    durability_penalty = True
-
-                # Cyclical distortion detected in Stage5-1
-                if cycle_flag is True:
-                    durability_penalty = True
-
-                # Excessive dilution / fragility
-                if dilution is not None and dilution > 0.50:
-                    durability_penalty = True
-
-
-                # Apply overlay to GPT output (do not change quant buckets)
-                if durability_penalty and isinstance(gpt, dict) and gpt.get("decision_tilt") == "strong_buy":
-                    gpt["decision_tilt"] = "buy"
-                    if isinstance(gpt.get("two_metric_based_risks"), list):
-                        # Ensure durability/cycle risk is explicitly stated
-                        gpt["two_metric_based_risks"] = (gpt["two_metric_based_risks"][:1] + [
-                            "Durability risk: volatility/cycle flags suggest earnings may normalize; avoid extrapolating peak profitability."
-                        ])[:2]
-                    else:
-                        gpt["two_metric_based_risks"] = [
-                            "Durability risk: volatility/cycle flags suggest earnings may normalize; avoid extrapolating peak profitability."
-                        ]
-                    gpt["confidence_1_to_5"] = min(int(gpt.get("confidence_1_to_5", 3)), 3)
-
-            except Exception:
-                # Never fail the run due to overlay logic
-                pass
-
-
             result_row = {
                 "ticker": symbol,
                 "company_name": r.get("company_name"),
@@ -1301,7 +1051,6 @@ def main():
                 "quadrant": quad,
                 "quality_adjusted_value_score": qav_score,
 
-                "gpt_nuance": gpt,
             }
 
             results.append(result_row)

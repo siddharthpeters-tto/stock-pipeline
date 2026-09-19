@@ -527,10 +527,8 @@ def analyze_single_stock_stage5_1(symbol: str) -> Dict[str, Any]:
     quant = compute_quant_features(quant_bundle)
     trajectory = compute_trajectory_metrics(quant_bundle)
 
-    gpt_out = {}
-
     flags = compute_kill_flags(quant)
-    lvl1_score = score_company(quant, gpt_out)
+    lvl1_score = score_company(quant, {})
 
     return {
         "ticker": symbol,
@@ -539,7 +537,6 @@ def analyze_single_stock_stage5_1(symbol: str) -> Dict[str, Any]:
         "target_fundamentals": extract_latest_fundamentals(quant_bundle),
         "kill_flags": flags,
         "level1_score": lvl1_score,
-        "gpt": gpt_out,
     }
 
 def main():

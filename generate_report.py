@@ -76,9 +76,9 @@ research_candidates = []
 for stock in data:
 
     quadrant = stock["quadrant"]
-    decision = stock["gpt_nuance"]["decision_tilt"]
+    decision = stock.get("investment_view", "Unclear")
 
-    if quadrant == "HQ_Cheap" and decision in ["buy", "strong_buy"]:
+    if quadrant == "HQ_Cheap" and decision in ["Strong Buy", "Accumulate"]:
         research_candidates.append(stock)
 
 research_candidates = sorted(
@@ -133,7 +133,7 @@ else:
         ticker = stock["ticker"]
         score = round(stock["quality_adjusted_value_score"], 2)
         final_score = round(stock["final_score"], 2)
-        decision = stock["gpt_nuance"]["decision_tilt"]
+        decision = stock.get("investment_view", "Unclear")
 
         lines.append(
             f"{ticker} | Base Score: {score} | Final Score: {final_score} | Signal: {decision}"

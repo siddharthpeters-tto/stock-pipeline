@@ -72,7 +72,6 @@ def test_fmp_request_counter_groups_real_requests(monkeypatch):
 
 def test_stage5_2_batch_analysis_fetches_one_quote_per_ticker(monkeypatch, tmp_path):
     stage5_2 = load_module("stage5_2_quote_dedup", "Stage5_2.py")
-    stage5_2.RUN_GPT = False
     stage5_2.TOP_N = None
     stage5_2.CACHE_DIR = str(tmp_path / "api_cache")
     stage5_2.INPUT_LEVEL1_JSON = str(tmp_path / "level1.json")
@@ -115,7 +114,6 @@ def test_stage5_2_batch_analysis_fetches_one_quote_per_ticker(monkeypatch, tmp_p
 
 def test_stage5_2_reuses_supplied_target_fundamentals(monkeypatch, tmp_path):
     stage5_2 = load_module("stage5_2_shared_fundamentals", "Stage5_2.py")
-    stage5_2.RUN_GPT = False
     stage5_2.CACHE_DIR = str(tmp_path / "api_cache")
     stage5_2.time.sleep = lambda *_args, **_kwargs: None
 
@@ -158,7 +156,6 @@ def test_stage5_2_reuses_supplied_target_fundamentals(monkeypatch, tmp_path):
 
 def test_stage5_2_without_shared_fundamentals_keeps_fetch_fallback(monkeypatch):
     stage5_2 = load_module("stage5_2_fallback", "Stage5_2.py")
-    stage5_2.RUN_GPT = False
     fetched = []
 
     def record_fetch(name, value):

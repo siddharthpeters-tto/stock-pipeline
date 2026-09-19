@@ -57,13 +57,11 @@
     .trajectory-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } .trajectory-box { min-height:118px; }
     .trajectory-box .metric-value { font-size:21px; } .subhead { margin:0 0 12px; color:var(--muted); font:500 10px "DM Mono",monospace; letter-spacing:.1em; text-transform:uppercase; }
     .valuation-grid { grid-template-columns:repeat(5,minmax(0,1fr)); }
-    .gpt-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
-    .insight-block { padding:14px; border:1px solid #1d2a3b; border-radius:10px; background:rgba(7,14,24,.5); } .insight-block h3 { color:var(--muted); font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; } .insight-block p,.insight-block li { color:#d3dbe4; font-size:13px; line-height:1.55; } .insight-block ul { margin:9px 0 0; padding-left:18px; }
     .secondary-btn { height:34px; padding:0 11px; border-color:#34445a; color:#c3ceda; background:#172333; font-size:11px; } .secondary-btn:hover { color:var(--text); background:#203147; }
     .copy-success { color:var(--green); border-color:#3d9d78; background:#123225; } .copy-error { color:var(--red); border-color:#75404a; background:#321a21; }
     pre { max-height:620px; margin:0; padding:16px; overflow:auto; white-space:pre-wrap; word-break:break-word; border:1px solid #1d2a3b; border-radius:10px; color:#cbd6e4; background:#070d16; font:12px/1.55 "DM Mono",monospace; }
     table { width:100%; margin-top:12px; border-collapse:collapse; overflow:hidden; border:1px solid #1d2a3b; border-radius:10px; background:#0b1421; } th,td { padding:11px 10px; text-align:left; border-bottom:1px solid #1b2838; font-size:12px; white-space:nowrap; } th { color:var(--muted); font:500 10px "DM Mono",monospace; letter-spacing:.08em; text-transform:uppercase; } tr:hover td { background:#111d2c; }
-    @media (max-width:760px) { .container { width:min(100% - 24px,1180px); padding-top:20px; } .site-header { margin-bottom:22px; } .header-link { padding-top:4px; } .summary-card { grid-template-columns:1fr; } .badges { justify-content:flex-start; } .metric-grid,.trajectory-grid,.valuation-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .gpt-grid { grid-template-columns:1fr; } .card { padding:17px; } }
+    @media (max-width:760px) { .container { width:min(100% - 24px,1180px); padding-top:20px; } .site-header { margin-bottom:22px; } .header-link { padding-top:4px; } .summary-card { grid-template-columns:1fr; } .badges { justify-content:flex-start; } .metric-grid,.trajectory-grid,.valuation-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .card { padding:17px; } }
     @media (max-width:460px) { .search-row { flex-direction:column; } .analyze-btn { width:100%; } .utility-row { align-items:flex-start; flex-direction:column; } .metric-grid,.trajectory-grid,.valuation-grid { grid-template-columns:1fr 1fr; gap:8px; } .metric-box { padding:11px; } .metric-value { font-size:17px; } .trajectory-box .metric-value { font-size:17px; } .card-header { margin-bottom:14px; } table { display:block; overflow-x:auto; } }
 
   </style>
@@ -135,11 +133,6 @@
       <section class="card">
         <div class="card-header"><div><div class="section-kicker">Market lens</div><h2>Valuation</h2></div><div class="section-note">Applicability-aware multiples</div></div>
         <div id="valuationMetrics" class="metric-grid valuation-grid"></div>
-      </section>
-
-      <section class="card">
-        <div class="card-header"><div><div class="section-kicker">Qualitative layer</div><h2>GPT Insights</h2></div></div>
-        <div id="gpt" class="gpt-block"></div>
       </section>
 
       <div id="comparisonCard" class="card hidden">
@@ -270,30 +263,6 @@
       }
     });
 
-    function renderGPT(g) {
-      const el = document.getElementById("gpt");
-
-      if (!g) {
-        el.innerHTML = '<div class="insight-block"><p>No GPT output returned.</p></div>';
-        return;
-      }
-
-      const strengths = Array.isArray(g.two_strengths) ? g.two_strengths : [];
-      const risks = Array.isArray(g.two_metric_based_risks) ? g.two_metric_based_risks : [];
-
-      const list = items => items.length ? `<ul>${items.map(x => `<li>${x}</li>`).join("")}</ul>` : "<p>—</p>";
-      el.innerHTML = `<div class="gpt-grid">
-        <div class="insight-block"><h3>Business Quality View</h3><p>${g.business_quality_view || "—"}</p></div>
-        <div class="insight-block"><h3>Valuation View</h3><p>${g.valuation_view || "—"}</p></div>
-        <div class="insight-block"><h3>Strengths</h3>${list(strengths)}</div>
-        <div class="insight-block"><h3>Risks</h3>${list(risks)}</div>
-        <div class="insight-block"><h3>What Must Be True For Upside</h3><p>${g.what_must_be_true_for_upside || "—"}</p></div>
-        <div class="insight-block"><h3>What Breaks The Thesis</h3><p>${g.what_would_break_the_thesis || "—"}</p></div>
-        <div class="insight-block"><h3>Decision Tilt</h3><p>${g.decision_tilt || "—"}</p></div>
-        <div class="insight-block"><h3>Confidence</h3><p>${g.confidence_1_to_5 || "—"}/5</p></div>
-      </div>`;
-    }
-
     function renderBusinessMetrics(m, trajectory) {
       renderMetrics("businessMetrics", [
         metricCard("Revenue CAGR (5Y)", m.rev_cagr_5y),
@@ -401,8 +370,8 @@
 
       const status1 = setTimeout(() => setStatus("Running structural analysis..."), 2500);
       const status2 = setTimeout(() => setStatus("Running valuation engine..."), 7000);
-      const status3 = setTimeout(() => setStatus(includePeers ? "Analyzing competitors..." : "Generating GPT insights..."), 12000);
-      const status4 = setTimeout(() => setStatus("Still working... peer and GPT calls can take time."), 25000);
+      const status3 = setTimeout(() => setStatus(includePeers ? "Analyzing competitors..." : "Finalizing deterministic research..."), 12000);
+      const status4 = setTimeout(() => setStatus("Still working... peer analysis can take time."), 25000);
 
       try {
         const res = await fetch("/analyze-stock", {
@@ -433,7 +402,6 @@
         const trajectory = s1.trajectory_metrics || {};
         const s2 = data.stage5_2 || {};
         const m = s2.metrics || {};
-        const g = s2.gpt || null;
 
         const qualityBucket = s2.quality_bucket || "unknown";
         const valuationBucket = s2.valuation_bucket || "unknown";
@@ -451,8 +419,6 @@
         renderBusinessMetrics(m, trajectory);
         renderTrajectory(trajectory);
         renderValuation({ ...m, quality_adjusted_value_score: s2.quality_adjusted_value_score });
-        renderGPT(g);
-
         document.getElementById("json").innerText = JSON.stringify(data, null, 2);
 
         if (includePeers && Array.isArray(data.comparison) && data.comparison.length > 0) {
