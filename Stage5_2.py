@@ -151,13 +151,18 @@ MIN_GPT_CONTEXT_CHARS = 200  # if less, skip GPT to prevent hallucination
 # HELPERS
 # =========================
 
-def cache_path(symbol: str, endpoint: str):
-    return os.path.join(CACHE_DIR, f"{symbol}_{endpoint}.json")
+def cache_path(symbol: str, endpoint: str, params: Optional[Dict[str, Any]] = None):
+    suffix = ""
+    params = params or {}
+    for key in ("period", "limit"):
+        if key in params:
+            suffix += f"_{params[key]}"
+    return os.path.join(CACHE_DIR, f"{symbol}_{endpoint}{suffix}.json")
 
 
-def read_cache(symbol: str, endpoint: str):
+def read_cache(symbol: str, endpoint: str, params: Optional[Dict[str, Any]] = None):
 
-    path = cache_path(symbol, endpoint)
+    path = cache_path(symbol, endpoint, params)
 
     if not os.path.exists(path):
         return None
@@ -181,9 +186,14 @@ def read_cache(symbol: str, endpoint: str):
         return None
 
 
-def write_cache(symbol: str, endpoint: str, data):
+def write_cache(
+    symbol: str,
+    endpoint: str,
+    data,
+    params: Optional[Dict[str, Any]] = None,
+):
 
-    path = cache_path(symbol, endpoint)
+    path = cache_path(symbol, endpoint, params)
 
     try:
         with open(path, "w") as f:
@@ -246,31 +256,33 @@ def fetch_live_quote(api: FmpClient, symbol: str) -> Dict[str, Any]:
 
 
 def fetch_latest_key_metrics(api: FmpClient, symbol: str):
+    params = {"period": "FY", "limit": 1}
 
-    cached = read_cache(symbol, "key_metrics")
+    cached = read_cache(symbol, "key_metrics", params)
     if cached:
         return cached
 
-    data = api.get("/key-metrics", {"symbol": symbol, "period": "FY", "limit": 1})
+    data = api.get("/key-metrics", {"symbol": symbol, **params})
 
     if isinstance(data, list) and data:
         result = data[0]
-        write_cache(symbol, "key_metrics", result)
+        write_cache(symbol, "key_metrics", result, params)
         return result
 
     return {}
 
 def fetch_latest_ratios(api: FmpClient, symbol: str):
+    params = {"period": "FY", "limit": 1}
 
-    cached = read_cache(symbol, "ratios")
+    cached = read_cache(symbol, "ratios", params)
     if cached:
         return cached
 
-    data = api.get("/ratios", {"symbol": symbol, "period": "FY", "limit": 1})
+    data = api.get("/ratios", {"symbol": symbol, **params})
 
     if isinstance(data, list) and data:
         result = data[0]
-        write_cache(symbol, "ratios", result)
+        write_cache(symbol, "ratios", result, params)
         return result
 
     return {}
@@ -324,42 +336,45 @@ def fetch_stock_peers(api: FmpClient, symbol: str):
     return []
 
 def fetch_latest_income_statement(api: FmpClient, symbol: str):
+    params = {"period": "FY", "limit": 1}
 
-    cached = read_cache(symbol, "income")
+    cached = read_cache(symbol, "income", params)
     if cached:
         return cached
 
-    data = api.get("/income-statement", {"symbol": symbol, "period": "FY", "limit": 1})
+    data = api.get("/income-statement", {"symbol": symbol, **params})
 
     if isinstance(data, list) and data:
         result = data[0]
-        write_cache(symbol, "income", result)
+        write_cache(symbol, "income", result, params)
         return result
 
     return {}
 
 def fetch_latest_cashflow_statement(api: FmpClient, symbol: str):
+    params = {"period": "FY", "limit": 1}
 
-    cached = read_cache(symbol, "cashflow")
+    cached = read_cache(symbol, "cashflow", params)
     if cached:
         return cached
 
-    data = api.get("/cash-flow-statement", {"symbol": symbol, "period": "FY", "limit": 1})
+    data = api.get("/cash-flow-statement", {"symbol": symbol, **params})
 
     if isinstance(data, list) and data:
         result = data[0]
-        write_cache(symbol, "cashflow", result)
+        write_cache(symbol, "cashflow", result, params)
         return result
 
     return {}
 
 def fetch_latest_balance_sheet(api: FmpClient, symbol: str):
+    params = {"period": "FY", "limit": 1}
 
-    cached = read_cache(symbol, "balance")
+    cached = read_cache(symbol, "balance", params)
     if cached:
         return cached
 
-    data = api.get("/balance-sheet-statement", {"symbol": symbol, "period": "FY", "limit": 1})
+    data = api.get("/balance-sheet-statement", {"symbol": symbol, **params})
 
     if isinstance(data, list) and data:
         result = data[0]
@@ -1149,9 +1164,9 @@ def main():
             # DYNAMIC VALUATION (TRUE REBUILD)
             # =============================
 
-            inc = fetch_latest_income_statement(api, symbol)
-            cf = fetch_latest_cashflow_statement(api, symbol)
-            bs = fetch_latest_balance_sheet(api, symbol)
+            inc = target_fundamentals["income"] if target_fundamentals is not None else fetch_latest_income_statement(api, symbol)
+            cf = target_fundamentals["cashflow"] if target_fundamentals is not None else fetch_latest_cashflow_statement(api, symbol)
+            bs = target_fundamentals["balance"] if target_fundamentals is not None else fetch_latest_balance_sheet(api, symbol)
 
             total_debt = to_float(bs.get("totalDebt"))
             cash = to_float(bs.get("cashAndCashEquivalents"))
