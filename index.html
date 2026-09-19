@@ -366,7 +366,10 @@
       </div>
 
       <div id="jsonWrap" class="card hidden">
-        <h2>Raw JSON</h2>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
+          <h2 style="margin:0;">Raw JSON</h2>
+          <button id="copyJsonBtn" type="button" class="secondary-btn" style="padding:8px 12px; border-radius:6px; border:1px solid #d0d7de; background:#f6f8fa; cursor:pointer;">Copy JSON</button>
+        </div>
         <pre id="json"></pre>
       </div>
     </div>
@@ -419,6 +422,43 @@
     function setStatus(message) {
       document.getElementById("status").innerText = message;
     }
+
+    async function copyJsonToClipboard() {
+      const jsonEl = document.getElementById("json");
+      const btn = document.getElementById("copyJsonBtn");
+      if (!jsonEl || !btn) return;
+
+      const text = jsonEl.innerText || jsonEl.textContent || "";
+      const original = btn.innerText;
+
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const temp = document.createElement("textarea");
+          temp.value = text;
+          temp.setAttribute("readonly", "");
+          temp.style.position = "fixed";
+          temp.style.left = "-9999px";
+          document.body.appendChild(temp);
+          temp.select();
+          document.execCommand("copy");
+          document.body.removeChild(temp);
+        }
+        btn.innerText = "✓ Copied";
+        setTimeout(() => { btn.innerText = original; }, 1200);
+      } catch (err) {
+        btn.innerText = "Copy failed";
+        setTimeout(() => { btn.innerText = original; }, 1600);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const btn = document.getElementById("copyJsonBtn");
+      if (btn) {
+        btn.addEventListener("click", copyJsonToClipboard);
+      }
+    });
 
     function renderGPT(g) {
       const el = document.getElementById("gpt");
