@@ -4,296 +4,69 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Stock Analyzer</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0b1020;
-      color: #f3f4f6;
-      margin: 0;
-      padding: 12px;
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-
-    h1, h2, h3 {
-      margin-top: 0;
-    }
-
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      flex-direction: column;
-      gap: 10px;
-      align-items: stretch;
-      margin-bottom: 20px;
-    }
-
-    input[type="text"] {
-      padding: 12px 14px;
-      font-size: 18px;
-      width: 100%;
-      border: none;
-      border-radius: 8px;
-      outline: none;
-    }
-
-    button {
-      padding: 12px 18px;
-      height: 44px;
-      font-size: 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background: #4caf50;
-      color: white;
-    }
-
-    button:hover {
-      opacity: 0.95;
-    }
-
-    .checkbox-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 15px;
-    }
-
-    .card {
-      background: #141b2d;
-      border-radius: 12px;
-      padding: 20px;
-      margin-top: 18px;
-    }
-
-    .badges {
-      margin: 10px 0 14px;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-weight: bold;
-      margin-right: 8px;
-      margin-bottom: 8px;
-    }
-
-    .good {
-      background: #2e7d32;
-      color: white;
-    }
-
-    .mid {
-      background: #ef6c00;
-      color: white;
-    }
-
-    .bad {
-      background: #c62828;
-      color: white;
-    }
-
-    .neutral {
-      background: #374151;
-      color: white;
-    }
-
-    .metric-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 14px;
-      margin-top: 12px;
-    }
-
-    .metric-box {
-      background: #0f172a;
-      border-radius: 10px;
-      padding: 14px;
-    }
-
-    .metric-label {
-      font-size: 13px;
-      color: #9ca3af;
-      margin-bottom: 6px;
-    }
-
-    .metric-value {
-      font-size: 24px;
-      font-weight: bold;
-    }
-
-    .loader {
-      display: none;
-      margin-top: 20px;
-    }
-
-    .spinner {
-      border: 6px solid #263148;
-      border-top: 6px solid #4caf50;
-      border-radius: 50%;
-      width: 42px;
-      height: 42px;
-      animation: spin 1s linear infinite;
-      margin-top: 10px;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    pre {
-      background: #0a0f1c;
-      color: #e5e7eb;
-      padding: 18px;
-      border-radius: 10px;
-      overflow-x: auto;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 12px;
-      background: #0f172a;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-
-    th, td {
-      padding: 12px 10px;
-      text-align: left;
-      border-bottom: 1px solid #1f2937;
-      font-size: 14px;
-    }
-
-    th {
-      background: #111827;
-      color: #d1d5db;
-    }
-
-    tr:hover td {
-      background: #111827;
-    }
-
-    .section-note {
-      color: #9ca3af;
-      font-size: 14px;
-      margin-top: 6px;
-    }
-
-    .gpt-block p {
-      margin: 8px 0;
-      line-height: 1.5;
-    }
-
-    ul {
-      margin-top: 6px;
-      padding-left: 20px;
-    }
-
-    .error {
-      background: #4b1113;
-      color: #fecaca;
-      padding: 14px;
-      border-radius: 10px;
-      margin-top: 18px;
-    }
-
-    .toggle {
-      position: relative;
-      display: inline-block;
-      width: 46px;
-      height: 24px;
-    }
-
-    .toggle input {
-      display: none;
-    }
-
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      inset: 0;
-      background: #374151;
-      border-radius: 24px;
-      transition: 0.2s;
-    }
-
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      bottom: 3px;
-      background: white;
-      border-radius: 50%;
-      transition: 0.2s;
-    }
-
-    input:checked + .slider {
-      background: #4caf50;
-    }
-
-    input:checked + .slider:before {
-      transform: translateX(22px);
-    }
-
-    .row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      width: 100%;
-    }
-
-    .row input {
-      flex: 1;
-    }
-
-    .row button {
-      white-space: nowrap;
-    }
-
-    .toggles {
-      justify-content: space-between;
-      margin-top: 6px;
-    }
-
-    .toggle-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 15px;
-    }
+    * { box-sizing:border-box; }
+    h2 { margin:0; font-size:18px; letter-spacing:-.02em; }
+    h3 { margin:0; font-size:15px; }
+    .header-link { color:var(--muted); text-decoration:none; font-size:13px; white-space:nowrap; padding-top:7px; }
+    .header-link:hover { color:var(--text); }
+    button { height:42px; padding:0 17px; border:1px solid transparent; border-radius:9px; cursor:pointer; color:#07110e; background:var(--green); font:700 13px Manrope,sans-serif; transition:background .15s,border-color .15s,transform .15s; }
+    button:hover { background:#86e3b3; } button:active { transform:translateY(1px); }
+    .analyze-btn { height:48px; min-width:112px; }
+    .utility-row { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; }
+    .toggle-group { display:flex; align-items:center; gap:9px; color:var(--muted); font-size:13px; }
+    .toggle input { opacity:0; width:0; height:0; }
+    .slider:before { content:""; position:absolute; width:15px; height:15px; left:2px; top:2px; background:#aab5c3; border-radius:50%; transition:.18s; }
+    input:checked + .slider { background:#245d49; border-color:#3d9d78; } input:checked + .slider:before { transform:translateX(17px); background:var(--green); }
+    .loader { display:none; align-items:center; gap:12px; margin:24px 0; color:var(--muted); font-size:13px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .hidden { display:none !important; }
+    .error { margin-top:18px; padding:14px 16px; border:1px solid #713b43; border-radius:10px; color:#ffc6c7; background:#2b151d; font-size:13px; }
+    .card { margin-top:18px; padding:22px; border:1px solid var(--line); border-radius:var(--radius); background:linear-gradient(145deg,rgba(16,24,39,.96),rgba(11,19,31,.96)); box-shadow:0 14px 32px rgba(0,0,0,.12); }
+    .card-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px; }
+    .section-note { margin-top:5px; color:var(--muted); font-size:12px; }
+    .summary-card { display:grid; grid-template-columns:1fr auto; align-items:end; gap:20px; }
+    .ticker-title { margin:6px 0 0; font-size:clamp(34px,7vw,64px); letter-spacing:-.07em; line-height:.95; }
+    .summary-view { color:var(--muted); font-size:13px; } .summary-view strong { color:var(--text); font-size:15px; }
+    .badges { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:7px; }
+    .badge { display:inline-flex; padding:7px 10px; border:1px solid; border-radius:999px; font:500 11px "DM Mono",monospace; }
+    .good { color:var(--green); background:#102c24; border-color:#27664e; } .mid { color:var(--amber); background:#302516; border-color:#765a2e; } .bad { color:var(--red); background:#321a21; border-color:#75404a; } .neutral { color:#b4bfcc; background:#1c2735; border-color:#38485d; }
+    .metric-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+    .metric-box { min-width:0; padding:14px; border:1px solid #1d2a3b; border-radius:10px; background:rgba(7,14,24,.55); }
+    .metric-label { color:var(--muted); font-size:11px; line-height:1.35; } .metric-value { margin-top:8px; color:var(--text); font:500 clamp(18px,2.5vw,25px) "DM Mono",monospace; overflow-wrap:anywhere; }
+    .metric-delta { margin-top:7px; color:var(--muted); font:400 11px "DM Mono",monospace; } .positive { color:var(--green); } .negative { color:var(--red); } .caution { color:var(--amber); } .unavailable { color:#68778a; }
+    .trajectory-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } .trajectory-box { min-height:118px; }
+    .trajectory-box .metric-value { font-size:21px; } .subhead { margin:0 0 12px; color:var(--muted); font:500 10px "DM Mono",monospace; letter-spacing:.1em; text-transform:uppercase; }
+    .valuation-grid { grid-template-columns:repeat(5,minmax(0,1fr)); }
+    .gpt-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .insight-block { padding:14px; border:1px solid #1d2a3b; border-radius:10px; background:rgba(7,14,24,.5); } .insight-block h3 { color:var(--muted); font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; } .insight-block p,.insight-block li { color:#d3dbe4; font-size:13px; line-height:1.55; } .insight-block ul { margin:9px 0 0; padding-left:18px; }
+    .secondary-btn { height:34px; padding:0 11px; border-color:#34445a; color:#c3ceda; background:#172333; font-size:11px; } .secondary-btn:hover { color:var(--text); background:#203147; }
+    .copy-success { color:var(--green); border-color:#3d9d78; background:#123225; } .copy-error { color:var(--red); border-color:#75404a; background:#321a21; }
+    pre { max-height:620px; margin:0; padding:16px; overflow:auto; white-space:pre-wrap; word-break:break-word; border:1px solid #1d2a3b; border-radius:10px; color:#cbd6e4; background:#070d16; font:12px/1.55 "DM Mono",monospace; }
+    table { width:100%; margin-top:12px; border-collapse:collapse; overflow:hidden; border:1px solid #1d2a3b; border-radius:10px; background:#0b1421; } th,td { padding:11px 10px; text-align:left; border-bottom:1px solid #1b2838; font-size:12px; white-space:nowrap; } th { color:var(--muted); font:500 10px "DM Mono",monospace; letter-spacing:.08em; text-transform:uppercase; } tr:hover td { background:#111d2c; }
+    @media (max-width:760px) { .container { width:min(100% - 24px,1180px); padding-top:20px; } .site-header { margin-bottom:22px; } .header-link { padding-top:4px; } .summary-card { grid-template-columns:1fr; } .badges { justify-content:flex-start; } .metric-grid,.trajectory-grid,.valuation-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .gpt-grid { grid-template-columns:1fr; } .card { padding:17px; } }
+    @media (max-width:460px) { .search-row { flex-direction:column; } .analyze-btn { width:100%; } .utility-row { align-items:flex-start; flex-direction:column; } .metric-grid,.trajectory-grid,.valuation-grid { grid-template-columns:1fr 1fr; gap:8px; } .metric-box { padding:11px; } .metric-value { font-size:17px; } .trajectory-box .metric-value { font-size:17px; } .card-header { margin-bottom:14px; } table { display:block; overflow-x:auto; } }
 
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Stock Analyzer</h1>
-    <div style="margin: -10px 0 16px;">
-      <a href="/rotation" style="color:#9db4ff; text-decoration:none; font-size:14px;">&rarr; Market Rotation Monitor</a>
-    </div>
+    <header class="site-header">
+      <div><div class="eyebrow">Fundamental research terminal</div><h1>Stock Analyzer</h1></div>
+      <a class="header-link" href="/rotation">Market Rotation <span aria-hidden="true">&rarr;</span></a>
+    </header>
 
     <div class="toolbar">
-
-      <div class="row">
+      <div class="search-row">
         <input id="ticker" type="text" placeholder="Ticker (e.g. NVDA)" autofocus/>
-        <button onclick="analyze()">Analyze</button>
+        <button class="analyze-btn" onclick="analyze()">Analyze</button>
       </div>
-
-      <div class="row toggles">
-
+      <div class="utility-row">
+        <div class="utility-controls">
         <div class="toggle-group">
           <span>Competitors</span>
           <label class="toggle">
@@ -303,15 +76,15 @@
         </div>
 
         <div class="toggle-group">
-          <span>JSON</span>
+          <span>JSON view</span>
           <label class="toggle">
             <input type="checkbox" id="jsonToggle" onchange="toggleJSON()">
             <span class="slider"></span>
           </label>
         </div>
-
+        </div>
+        <span class="section-note">Annual fundamentals &middot; live valuation</span>
       </div>
-
     </div>
 
     <div id="loader" class="loader">
@@ -322,54 +95,46 @@
     <div id="errorBox" class="error hidden"></div>
 
     <div id="results" class="hidden">
-      <div class="card">
-        <h2>Quality & Valuation</h2>
-        <div id="badges" class="badges"></div>
-        <div id="summaryText"></div>
-      </div>
-
-      <div class="card">
-        <h2>Key Metrics</h2>
-        <div class="metric-grid">
-          <div class="metric-box">
-            <div class="metric-label">ROIC</div>
-            <div class="metric-value" id="roic">—</div>
-          </div>
-          <div class="metric-box">
-            <div class="metric-label">FCF Margin</div>
-            <div class="metric-value" id="fcf">—</div>
-          </div>
-          <div class="metric-box">
-            <div class="metric-label">Revenue CAGR (5Y)</div>
-            <div class="metric-value" id="growth">—</div>
-          </div>
-          <div class="metric-box">
-            <div class="metric-label">EV / FCF</div>
-            <div class="metric-value" id="evfcf">—</div>
-          </div>
-          <div class="metric-box">
-            <div class="metric-label">QAV Score</div>
-            <div class="metric-value" id="qav">—</div>
-          </div>
+      <section class="card summary-card">
+        <div>
+          <div class="section-kicker">Research snapshot</div>
+          <div id="summaryTicker" class="ticker-title">—</div>
+          <div id="summaryText" class="summary-view"></div>
         </div>
-      </div>
+        <div id="badges" class="badges"></div>
+      </section>
 
-      <div class="card">
-        <h2>GPT Insights</h2>
+      <section class="card">
+        <div class="card-header"><div><div class="section-kicker">Fundamentals</div><h2>Business Today</h2></div><div class="section-note">Current FY levels</div></div>
+        <div id="businessMetrics" class="metric-grid"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-header"><div><div class="section-kicker">Annual direction</div><h2>Trajectory</h2></div><div id="trajectoryPeriods" class="section-note"></div></div>
+        <div class="subhead">Current level</div>
+        <div id="trajectoryCurrent" class="metric-grid trajectory-grid"></div>
+        <div class="subhead" style="margin-top:22px;">Change vs prior FY</div>
+        <div id="trajectoryChange" class="metric-grid trajectory-grid"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-header"><div><div class="section-kicker">Market lens</div><h2>Valuation</h2></div><div class="section-note">Applicability-aware multiples</div></div>
+        <div id="valuationMetrics" class="metric-grid valuation-grid"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-header"><div><div class="section-kicker">Qualitative layer</div><h2>GPT Insights</h2></div></div>
         <div id="gpt" class="gpt-block"></div>
-      </div>
+      </section>
 
       <div id="comparisonCard" class="card hidden">
-        <h2>Competitor Comparison</h2>
-        <div class="section-note">Shown only when Include Competitors is enabled and the backend returns comparison data.</div>
+        <div class="card-header"><div><div class="section-kicker">Relative context</div><h2>Competitor Comparison</h2></div></div>
+        <div class="section-note">Shown only when Competitors is enabled and comparison data is returned.</div>
         <div id="comparisonTableWrap"></div>
       </div>
 
       <div id="jsonWrap" class="card hidden">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
-          <h2 style="margin:0;">Raw JSON</h2>
-          <button id="copyJsonBtn" type="button" class="secondary-btn" style="padding:8px 12px; border-radius:6px; border:1px solid #d0d7de; background:#f6f8fa; cursor:pointer;">Copy JSON</button>
-        </div>
+        <div class="card-header"><div><div class="section-kicker">Payload</div><h2>Raw JSON</h2></div><button id="copyJsonBtn" type="button" class="secondary-btn">Copy JSON</button></div>
         <pre id="json"></pre>
       </div>
     </div>
@@ -386,13 +151,40 @@
     }
 
     function formatPct(value) {
-      if (value === null || value === undefined || Number.isNaN(value)) return "—";
-      return (value * 100).toFixed(1) + "%";
+      if (value === null || value === undefined || !Number.isFinite(Number(value))) return "—";
+      return (Number(value) * 100).toFixed(1) + "%";
     }
 
-    function formatNum(value, decimals = 1) {
-      if (value === null || value === undefined || Number.isNaN(value)) return "—";
-      return Number(value).toFixed(decimals);
+    function formatNum(value, decimals = 1, suffix = "") {
+      if (value === null || value === undefined || !Number.isFinite(Number(value))) return "—";
+      return Number(value).toFixed(decimals) + suffix;
+    }
+
+    function formatMultiple(value, applicable) {
+      if (applicable === false) return "N/M";
+      if (value === null || value === undefined || !Number.isFinite(Number(value))) return "—";
+      return Number(value).toFixed(1) + "x";
+    }
+
+    function formatDelta(value, unit = "pp") {
+      if (value === null || value === undefined || !Number.isFinite(Number(value))) return "—";
+      const number = Number(value) * (unit === "pp" ? 100 : 1);
+      const sign = number > 0 ? "↑ +" : number < 0 ? "↓ " : "→ ";
+      return sign + Math.abs(number).toFixed(1) + (unit === "pp" ? " pp" : "");
+    }
+
+    function deltaClass(value) {
+      if (value === null || value === undefined || !Number.isFinite(Number(value))) return "unavailable";
+      return Number(value) > 0 ? "positive" : Number(value) < 0 ? "negative" : "caution";
+    }
+
+    function metricCard(label, value, delta = null, valueFormatter = formatPct, deltaUnit = "pp") {
+      const deltaText = delta === null || delta === undefined ? "" : `<div class="metric-delta ${deltaClass(delta)}">${formatDelta(delta, deltaUnit)} vs prior FY</div>`;
+      return `<div class="metric-box"><div class="metric-label">${label}</div><div class="metric-value">${valueFormatter(value)}</div>${deltaText}</div>`;
+    }
+
+    function renderMetrics(id, cards) {
+      document.getElementById(id).innerHTML = cards.join("");
     }
 
     function badgeClass(label) {
@@ -446,11 +238,14 @@
           document.body.removeChild(temp);
         }
         btn.innerText = "✓ Copied";
+        btn.classList.add("copy-success");
         setTimeout(() => { btn.innerText = original; }, 1200);
       } catch (err) {
         btn.innerText = "Copy failed";
+        btn.classList.add("copy-error");
         setTimeout(() => { btn.innerText = original; }, 1600);
       }
+      setTimeout(() => { btn.classList.remove("copy-success", "copy-error"); }, 1700);
     }
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -464,33 +259,73 @@
       const el = document.getElementById("gpt");
 
       if (!g) {
-        el.innerHTML = "<p>No GPT output returned.</p>";
+        el.innerHTML = '<div class="insight-block"><p>No GPT output returned.</p></div>';
         return;
       }
 
       const strengths = Array.isArray(g.two_strengths) ? g.two_strengths : [];
       const risks = Array.isArray(g.two_metric_based_risks) ? g.two_metric_based_risks : [];
 
-      el.innerHTML = `
-        <p><strong>Decision Tilt:</strong> ${g.decision_tilt || "—"}</p>
-        <p><strong>Business Quality View:</strong> ${g.business_quality_view || "—"}</p>
-        <p><strong>Valuation View:</strong> ${g.valuation_view || "—"}</p>
-        <p><strong>Quality vs Price:</strong> ${g.quality_vs_price_alignment || "—"}</p>
+      const list = items => items.length ? `<ul>${items.map(x => `<li>${x}</li>`).join("")}</ul>` : "<p>—</p>";
+      el.innerHTML = `<div class="gpt-grid">
+        <div class="insight-block"><h3>Business Quality View</h3><p>${g.business_quality_view || "—"}</p></div>
+        <div class="insight-block"><h3>Valuation View</h3><p>${g.valuation_view || "—"}</p></div>
+        <div class="insight-block"><h3>Strengths</h3>${list(strengths)}</div>
+        <div class="insight-block"><h3>Risks</h3>${list(risks)}</div>
+        <div class="insight-block"><h3>What Must Be True For Upside</h3><p>${g.what_must_be_true_for_upside || "—"}</p></div>
+        <div class="insight-block"><h3>What Breaks The Thesis</h3><p>${g.what_would_break_the_thesis || "—"}</p></div>
+        <div class="insight-block"><h3>Decision Tilt</h3><p>${g.decision_tilt || "—"}</p></div>
+        <div class="insight-block"><h3>Confidence</h3><p>${g.confidence_1_to_5 || "—"}/5</p></div>
+      </div>`;
+    }
 
-        <p><strong>Strengths</strong></p>
-        <ul>
-          ${strengths.map(x => `<li>${x}</li>`).join("") || "<li>—</li>"}
-        </ul>
+    function renderBusinessMetrics(m, trajectory) {
+      renderMetrics("businessMetrics", [
+        metricCard("Revenue CAGR (5Y)", m.rev_cagr_5y),
+        metricCard("Gross Margin", trajectory.gross_margin_latest, trajectory.gross_margin_delta_1y),
+        metricCard("Operating Margin", trajectory.operating_margin_latest, trajectory.operating_margin_delta_1y),
+        metricCard("EBITDA Margin", trajectory.ebitda_margin_latest, trajectory.ebitda_margin_delta_1y),
+        metricCard("FCF Margin", trajectory.fcf_margin_latest, trajectory.fcf_margin_delta_1y),
+        metricCard("ROIC", trajectory.roic_latest, trajectory.roic_delta_1y),
+        metricCard("SBC / Revenue", trajectory.sbc_to_revenue_latest, trajectory.sbc_to_revenue_delta_1y),
+        metricCard("Net Debt / EBITDA", m.net_debt_to_ebitda, null, value => formatNum(value, 1, "x"), "number"),
+      ]);
+    }
 
-        <p><strong>Risks</strong></p>
-        <ul>
-          ${risks.map(x => `<li>${x}</li>`).join("") || "<li>—</li>"}
-        </ul>
+    function renderTrajectory(trajectory) {
+      const unavailable = !trajectory || typeof trajectory !== "object";
+      const t = unavailable ? {} : trajectory;
+      document.getElementById("trajectoryPeriods").innerText = t.periods?.latest && t.periods?.prior ? `${t.periods.prior} → ${t.periods.latest}` : "FY history unavailable";
+      renderMetrics("trajectoryCurrent", [
+        metricCard("Revenue Growth", t.revenue_growth_latest),
+        metricCard("Gross Margin", t.gross_margin_latest),
+        metricCard("Operating Margin", t.operating_margin_latest),
+        metricCard("EBITDA Margin", t.ebitda_margin_latest),
+        metricCard("FCF Margin", t.fcf_margin_latest),
+        metricCard("ROIC", t.roic_latest),
+        metricCard("SBC / Revenue", t.sbc_to_revenue_latest),
+        metricCard("Share Count", t.shares_latest, null, value => value == null ? "—" : formatNum(value, 0)),
+      ]);
+      renderMetrics("trajectoryChange", [
+        metricCard("Revenue Growth", t.revenue_growth_delta),
+        metricCard("Gross Margin", t.gross_margin_delta_1y),
+        metricCard("Operating Margin", t.operating_margin_delta_1y),
+        metricCard("EBITDA Margin", t.ebitda_margin_delta_1y),
+        metricCard("FCF Margin", t.fcf_margin_delta_1y),
+        metricCard("ROIC", t.roic_delta_1y),
+        metricCard("SBC / Revenue", t.sbc_to_revenue_delta_1y),
+        metricCard("Share Count Change", t.share_count_change_1y, null, value => value == null ? "—" : formatNum(value, 0), "number"),
+      ]);
+    }
 
-        <p><strong>What must be true for upside:</strong> ${g.what_must_be_true_for_upside || "—"}</p>
-        <p><strong>What would break the thesis:</strong> ${g.what_would_break_the_thesis || "—"}</p>
-        <p><strong>Confidence:</strong> ${g.confidence_1_to_5 || "—"}/5</p>
-      `;
+    function renderValuation(m) {
+      renderMetrics("valuationMetrics", [
+        metricCard("EV / Sales", m.ev_to_sales, null, value => formatMultiple(value, true)),
+        metricCard("EV / EBITDA", m.ev_to_ebitda, null, value => formatMultiple(value, m.ev_to_ebitda_applicable)),
+        metricCard("EV / FCF", m.ev_to_fcf, null, value => formatMultiple(value, m.ev_to_fcf_applicable)),
+        metricCard("FCF Yield", m.fcf_yield, null, value => m.fcf_yield_applicable === false ? "N/M" : formatPct(value)),
+        metricCard("QAV Score", m.quality_adjusted_value_score, null, value => formatNum(value, 2)),
+      ]);
     }
 
     function renderComparisonTable(rows) {
@@ -579,6 +414,8 @@
           return;
         }
 
+        const s1 = data.stage5_1 || {};
+        const trajectory = s1.trajectory_metrics || {};
         const s2 = data.stage5_2 || {};
         const m = s2.metrics || {};
         const g = s2.gpt || null;
@@ -586,23 +423,19 @@
         const qualityBucket = s2.quality_bucket || "unknown";
         const valuationBucket = s2.valuation_bucket || "unknown";
 
+        document.getElementById("summaryTicker").innerText = ticker;
         document.getElementById("badges").innerHTML = `
           <span class="badge ${badgeClass(qualityBucket)}">${friendlyLabel(qualityBucket)}</span>
           <span class="badge ${badgeClass(valuationBucket)}">${friendlyLabel(valuationBucket)}</span>
         `;
 
         document.getElementById("summaryText").innerHTML = `
-          <p><strong>Ticker:</strong> ${ticker}</p>
-          <p><strong>Investment View:</strong> ${s2.investment_view || "—"}</p>
-          <p><strong>AI Perspective:</strong> ${g?.decision_tilt || "—"}</p>
+          <p><strong>${s2.investment_view || "—"}</strong> <span class="section-note">Investment view</span></p>
         `;
 
-        document.getElementById("roic").innerText = formatPct(m.roic);
-        document.getElementById("fcf").innerText = formatPct(m.fcf_margin);
-        document.getElementById("growth").innerText = formatPct(m.rev_cagr_5y);
-        document.getElementById("evfcf").innerText = formatNum(m.ev_to_fcf);
-        document.getElementById("qav").innerText = formatNum(s2.quality_adjusted_value_score, 2);
-
+        renderBusinessMetrics(m, trajectory);
+        renderTrajectory(trajectory);
+        renderValuation({ ...m, quality_adjusted_value_score: s2.quality_adjusted_value_score });
         renderGPT(g);
 
         document.getElementById("json").innerText = JSON.stringify(data, null, 2);
