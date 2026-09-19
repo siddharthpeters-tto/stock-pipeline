@@ -450,13 +450,16 @@ def valuation_bucket(m: Dict[str, Any]) -> str:
     """
     Institutional valuation bands.
     Uses EV/FCF primarily, falls back to FCF yield.
+    Negative or zero denominators are non-applicable for positive valuation scoring.
     """
 
     ev_fcf = m.get("ev_to_fcf")
     fcf_y = m.get("fcf_yield")
+    ev_fcf_applicable = bool(m.get("ev_to_fcf_applicable", ev_fcf is not None and ev_fcf > 0))
+    fcf_y_applicable = bool(m.get("fcf_yield_applicable", fcf_y is not None and fcf_y > 0))
 
     # --- Primary: EV / FCF ---
-    if ev_fcf is not None and ev_fcf > 0:
+    if ev_fcf_applicable and ev_fcf is not None and ev_fcf > 0:
 
         if ev_fcf <= 15:
             return "cheap"
@@ -471,7 +474,7 @@ def valuation_bucket(m: Dict[str, Any]) -> str:
             return "expensive"
 
     # --- Fallback: FCF Yield ---
-    if fcf_y is not None and fcf_y > 0:
+    if fcf_y_applicable and fcf_y is not None and fcf_y > 0:
 
         if fcf_y >= 0.07:   # ~14x implied
             return "cheap"
@@ -520,7 +523,7 @@ def score_quality_adjusted_value(m: Dict[str, Any], peer_medians: Dict[str, Opti
     Philosophy:
       - Reward ROIC, FCF margin, growth
       - Penalize dilution and SBC
-      - Reward cheapness (lower EV/FCF or higher FCF yield)
+      - Reward cheapness only when valuation metrics are economically applicable
       - Reward discount vs peers (if peer data exists)
     """
     s = 0.0
@@ -532,37 +535,37 @@ def score_quality_adjusted_value(m: Dict[str, Any], peer_medians: Dict[str, Opti
     sbc = m.get("sbc_to_revenue")
     ev_fcf = m.get("ev_to_fcf")
     fcf_y = m.get("fcf_yield")
+    ev_fcf_applicable = bool(m.get("ev_to_fcf_applicable", ev_fcf is not None and ev_fcf > 0))
+    fcf_y_applicable = bool(m.get("fcf_yield_applicable", fcf_y is not None and fcf_y > 0))
 
     # Quality
-    # Quality
     if roic is not None:
-        # Cap extreme ROIC to avoid denominator distortions
-        adj_roic = min(roic, 0.50)  # cap at 50%
+        adj_roic = min(roic, 0.50)
         s += clamp((adj_roic - 0.10) * 40, -5, 8)
     if fcfm is not None:
-        s += clamp((fcfm - 0.05) * 40, -4, 8)   # 5% baseline
+        s += clamp((fcfm - 0.05) * 40, -4, 8)
     if growth is not None:
-        s += clamp((growth - 0.04) * 30, -3, 6)  # 6% baseline
+        s += clamp((growth - 0.04) * 30, -3, 6)
 
     # Capital discipline
     if dil is not None:
-        s += clamp(-(dil) * 10, -8, 2)          # dilution hurts
+        s += clamp(-(dil) * 10, -8, 2)
     if sbc is not None:
-        s += clamp(-(sbc) * 50, -6, 1)          # SBC/rev hurts
+        s += clamp(-(sbc) * 50, -6, 1)
 
-    # Valuation absolute
-    if ev_fcf is not None:
-        s += clamp((25 - ev_fcf) / 5, -6, 6)    # lower EV/FCF better
-    elif fcf_y is not None:
-        s += clamp((fcf_y - 0.04) * 80, -6, 6)  # higher yield better
+    # Valuation absolute: only when the underlying denominator is economically meaningful.
+    if ev_fcf_applicable and ev_fcf is not None:
+        s += clamp((25 - ev_fcf) / 5, -6, 6)
+    elif fcf_y_applicable and fcf_y is not None:
+        s += clamp((fcf_y - 0.04) * 80, -6, 6)
 
-    # Peer relative discount/premium (only if peer medians are economically meaningful)
-
+    # Peer relative discount/premium (only if economically meaningful)
     peer_ev_fcf = peer_medians.get("peer_ev_to_fcf")
     if (
-        ev_fcf is not None
+        ev_fcf_applicable
+        and ev_fcf is not None
         and peer_ev_fcf is not None
-        and peer_ev_fcf > 5  # avoid distorted or tiny peer multiples
+        and peer_ev_fcf > 5
     ):
         rel = (peer_ev_fcf - ev_fcf) / peer_ev_fcf
         s += clamp(rel * 6, -3, 3)
@@ -571,11 +574,10 @@ def score_quality_adjusted_value(m: Dict[str, Any], peer_medians: Dict[str, Opti
     if (
         roic is not None
         and peer_roic is not None
-        and peer_roic > 0.08  # require economically meaningful peer quality
+        and peer_roic > 0.08
     ):
         relq = (roic - peer_roic) / peer_roic
         s += clamp(relq * 3, -2, 2)
-
 
     return float(s)
 
@@ -810,12 +812,21 @@ def analyze_single_stock_stage5_2(symbol: str, level1_row: Dict[str, Any]) -> Di
     if live_market_cap and total_debt and cash is not None:
         enterprise_value = live_market_cap + total_debt - cash
 
-    if enterprise_value and fcf:
+    m["ev_to_fcf_applicable"] = bool(enterprise_value is not None and fcf is not None and fcf > 0 and enterprise_value > 0)
+    m["ev_to_ebitda_applicable"] = bool(enterprise_value is not None and ebitda is not None and ebitda > 0 and enterprise_value > 0)
+    m["fcf_yield_applicable"] = bool(enterprise_value is not None and fcf is not None and fcf > 0 and enterprise_value > 0)
+
+    if enterprise_value is not None and fcf is not None and fcf != 0:
         m["ev_to_fcf"] = enterprise_value / fcf
         m["fcf_yield"] = fcf / enterprise_value
+    else:
+        m["ev_to_fcf"] = None if fcf is None or fcf == 0 else enterprise_value / fcf
+        m["fcf_yield"] = None if enterprise_value in (None, 0) else fcf / enterprise_value if fcf is not None else None
 
-    if enterprise_value and ebitda:
+    if enterprise_value is not None and ebitda is not None and ebitda != 0:
         m["ev_to_ebitda"] = enterprise_value / ebitda
+    else:
+        m["ev_to_ebitda"] = None if ebitda in (None, 0) else enterprise_value / ebitda
 
     if enterprise_value and revenue:
         m["ev_to_sales"] = enterprise_value / revenue
@@ -915,12 +926,21 @@ def run_single_ticker(symbol: str):
         if live_market_cap is not None and total_debt is not None and cash is not None:
             enterprise_value = live_market_cap + total_debt - cash
 
-        if enterprise_value and fcf and fcf != 0:
+        m["ev_to_fcf_applicable"] = bool(enterprise_value is not None and fcf is not None and fcf > 0 and enterprise_value > 0)
+        m["ev_to_ebitda_applicable"] = bool(enterprise_value is not None and ebitda is not None and ebitda > 0 and enterprise_value > 0)
+        m["fcf_yield_applicable"] = bool(enterprise_value is not None and fcf is not None and fcf > 0 and enterprise_value > 0)
+
+        if enterprise_value is not None and fcf is not None and fcf != 0:
             m["ev_to_fcf"] = enterprise_value / fcf
             m["fcf_yield"] = fcf / enterprise_value
+        else:
+            m["ev_to_fcf"] = None if fcf is None or fcf == 0 else enterprise_value / fcf
+            m["fcf_yield"] = None if enterprise_value in (None, 0) else fcf / enterprise_value if fcf is not None else None
 
-        if enterprise_value and ebitda and ebitda != 0:
+        if enterprise_value is not None and ebitda is not None and ebitda != 0:
             m["ev_to_ebitda"] = enterprise_value / ebitda
+        else:
+            m["ev_to_ebitda"] = None if ebitda in (None, 0) else enterprise_value / ebitda
 
         if enterprise_value and revenue and revenue != 0:
             m["ev_to_sales"] = enterprise_value / revenue
@@ -1105,12 +1125,21 @@ def main():
             if live_market_cap is not None and total_debt is not None and cash is not None:
                 enterprise_value = live_market_cap + total_debt - cash
 
-            if enterprise_value and fcf and fcf != 0:
+            m["ev_to_fcf_applicable"] = bool(enterprise_value is not None and fcf is not None and fcf > 0 and enterprise_value > 0)
+            m["ev_to_ebitda_applicable"] = bool(enterprise_value is not None and ebitda is not None and ebitda > 0 and enterprise_value > 0)
+            m["fcf_yield_applicable"] = bool(enterprise_value is not None and fcf is not None and fcf > 0 and enterprise_value > 0)
+
+            if enterprise_value is not None and fcf is not None and fcf != 0:
                 m["ev_to_fcf"] = enterprise_value / fcf
                 m["fcf_yield"] = fcf / enterprise_value
+            else:
+                m["ev_to_fcf"] = None if fcf is None or fcf == 0 else enterprise_value / fcf
+                m["fcf_yield"] = None if enterprise_value in (None, 0) else fcf / enterprise_value if fcf is not None else None
 
-            if enterprise_value and ebitda and ebitda != 0:
+            if enterprise_value is not None and ebitda is not None and ebitda != 0:
                 m["ev_to_ebitda"] = enterprise_value / ebitda
+            else:
+                m["ev_to_ebitda"] = None if ebitda in (None, 0) else enterprise_value / ebitda
 
             if enterprise_value and revenue and revenue != 0:
                 m["ev_to_sales"] = enterprise_value / revenue

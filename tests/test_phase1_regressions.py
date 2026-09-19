@@ -419,6 +419,66 @@ def test_stage5_2_parse_fallback_and_short_context(monkeypatch):
     assert len(short_context) < stage5_2.MIN_GPT_CONTEXT_CHARS
 
 
+def test_negative_valuation_metrics_do_not_create_positive_cheapness_signal(monkeypatch):
+    set_env(monkeypatch)
+    stage5_2 = load_module("stage5_2_negative_valuation_under_test", "Stage5_2.py")
+
+    peer_medians = {"peer_ev_to_fcf": 20.0, "peer_roic": 0.16}
+    positive = {
+        "roic": 0.22,
+        "fcf_margin": 0.17,
+        "rev_cagr_5y": 0.18,
+        "dilution_5y": 0.04,
+        "sbc_to_revenue": 0.01,
+        "ev_to_fcf": 18.0,
+        "ev_to_fcf_applicable": True,
+        "fcf_yield": 0.06,
+        "fcf_yield_applicable": True,
+    }
+    negative = {
+        "roic": 0.22,
+        "fcf_margin": 0.17,
+        "rev_cagr_5y": 0.18,
+        "dilution_5y": 0.04,
+        "sbc_to_revenue": 0.01,
+        "ev_to_fcf": -4.0,
+        "ev_to_fcf_applicable": False,
+        "fcf_yield": -0.03,
+        "fcf_yield_applicable": False,
+    }
+    zero_fcf = {
+        **negative,
+        "ev_to_fcf": 0.0,
+        "ev_to_fcf_applicable": False,
+        "fcf_yield": 0.0,
+        "fcf_yield_applicable": False,
+    }
+    negative_ebitda = {
+        "roic": 0.22,
+        "fcf_margin": 0.17,
+        "rev_cagr_5y": 0.18,
+        "dilution_5y": 0.04,
+        "sbc_to_revenue": 0.01,
+        "ev_to_ebitda": -6.0,
+        "ev_to_ebitda_applicable": False,
+        "ev_to_fcf": 18.0,
+        "ev_to_fcf_applicable": True,
+        "fcf_yield": 0.06,
+        "fcf_yield_applicable": True,
+    }
+
+    positive_score = stage5_2.score_quality_adjusted_value(positive, peer_medians)
+    negative_score = stage5_2.score_quality_adjusted_value(negative, peer_medians)
+    zero_score = stage5_2.score_quality_adjusted_value(zero_fcf, peer_medians)
+    negative_ebitda_score = stage5_2.score_quality_adjusted_value(negative_ebitda, peer_medians)
+
+    assert negative_score <= positive_score
+    assert zero_score <= positive_score
+    assert negative_ebitda_score <= positive_score
+    assert stage5_2.valuation_bucket(negative) == "unclear"
+    assert stage5_2.valuation_bucket(zero_fcf) == "unclear"
+    assert stage5_2.valuation_bucket({**negative_ebitda, "ev_to_fcf": None, "fcf_yield": None, "ev_to_fcf_applicable": False, "fcf_yield_applicable": False}) == "unclear"
+
 def test_generate_report_persistence_and_top_candidates(monkeypatch, tmp_path):
     set_env(monkeypatch)
     monkeypatch.chdir(tmp_path)
