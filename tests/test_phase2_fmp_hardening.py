@@ -137,6 +137,7 @@ def test_stage5_2_reuses_supplied_target_fundamentals(monkeypatch, tmp_path):
     monkeypatch.setattr(stage5_2, "fetch_latest_balance_sheet", target_fetch_must_not_run)
     monkeypatch.setattr(stage5_2, "fetch_stock_peers", lambda api, symbol: [{"symbol": "MSFT"}])
     monkeypatch.setattr(stage5_2, "fetch_live_quote", lambda api, symbol: {"price": 200.0, "marketCap": 3_000_000_000.0})
+    monkeypatch.setattr(stage5_2, "fetch_quarterly_bundle", lambda *_args: {"income": [], "cashflow": []})
 
     result = stage5_2.analyze_single_stock_stage5_2(
         "AAPL",
@@ -172,6 +173,7 @@ def test_stage5_2_without_shared_fundamentals_keeps_fetch_fallback(monkeypatch):
     monkeypatch.setattr(stage5_2, "fetch_latest_balance_sheet", record_fetch("balance", {"totalDebt": 120_000_000.0, "cashAndCashEquivalents": 80_000_000.0}))
     monkeypatch.setattr(stage5_2, "fetch_stock_peers", lambda _api, _symbol: [])
     monkeypatch.setattr(stage5_2, "fetch_live_quote", lambda _api, _symbol: {"price": 200.0, "marketCap": 3_000_000_000.0})
+    monkeypatch.setattr(stage5_2, "fetch_quarterly_bundle", lambda *_args: {"income": [], "cashflow": []})
 
     stage5_2.analyze_single_stock_stage5_2("AAPL", {"ticker": "AAPL"})
 

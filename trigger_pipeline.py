@@ -14,6 +14,12 @@ SECRET_KEY = os.getenv("PIPELINE_SECRET")
 def index():
     return send_file("index.html")
 
+
+@app.route("/favicon.svg")
+def favicon():
+    return send_file("favicon.svg", mimetype="image/svg+xml")
+
+
 # Start the pipeline
 @app.route("/run", methods=["POST"])
 def run_pipeline():

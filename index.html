@@ -27,7 +27,7 @@
     .header-link { color:var(--muted); text-decoration:none; font-size:13px; white-space:nowrap; padding-top:7px; }
     .header-link:hover { color:var(--text); }
     button { height:42px; padding:0 17px; border:1px solid transparent; border-radius:9px; cursor:pointer; color:#07110e; background:var(--green); font:700 13px Manrope,sans-serif; transition:background .15s,border-color .15s,transform .15s; }
-    button:hover { background:#86e3b3; } button:active { transform:translateY(1px); }
+    button:hover { background:#86e3b3; } button:active { transform:translateY(1px); } button:disabled { cursor:wait; opacity:.62; transform:none; }
     .analyze-btn { height:48px; min-width:112px; }
     .utility-row { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; }
     .utility-controls { display:flex; flex-wrap:wrap; gap:16px; }
@@ -57,13 +57,20 @@
     .trajectory-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } .trajectory-box { min-height:118px; }
     .trajectory-box .metric-value { font-size:21px; } .subhead { margin:0 0 12px; color:var(--muted); font:500 10px "DM Mono",monospace; letter-spacing:.1em; text-transform:uppercase; }
     .valuation-grid { grid-template-columns:repeat(5,minmax(0,1fr)); }
-    .pulse-table-wrap { overflow-x:auto; } .pulse-table { min-width:760px; } .pulse-table td:first-child { color:var(--text); font-family:"DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; } .date-note { display:block; margin-top:4px; color:var(--muted); font:400 10px "DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .pulse-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    .pulse-card { min-width:0; padding:14px; border:1px solid #1d2a3b; border-radius:10px; background:rgba(7,14,24,.55); }
+    .pulse-value { margin-top:7px; color:var(--text); font:500 clamp(18px,2.5vw,24px) "DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .sparkline { display:block; width:100%; height:54px; margin-top:10px; overflow:visible; }
+    .sparkline-line { fill:none; stroke:var(--green); stroke-width:2; vector-effect:non-scaling-stroke; }
+    .sparkline-point { fill:var(--panel-2); stroke:var(--green); stroke-width:1.6; outline:none; vector-effect:non-scaling-stroke; }
+    .sparkline-point:hover,.sparkline-point:focus { fill:var(--green); stroke:var(--text); stroke-width:2.4; }
+    .pulse-quarters { display:flex; justify-content:space-between; gap:4px; margin-top:5px; color:var(--muted); font:400 9px "DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; }
     .secondary-btn { height:34px; padding:0 11px; border-color:#34445a; color:#c3ceda; background:#172333; font-size:11px; } .secondary-btn:hover { color:var(--text); background:#203147; }
     .copy-success { color:var(--green); border-color:#3d9d78; background:#123225; } .copy-error { color:var(--red); border-color:#75404a; background:#321a21; }
     pre { max-height:620px; margin:0; padding:16px; overflow:auto; white-space:pre-wrap; word-break:break-word; border:1px solid #1d2a3b; border-radius:10px; color:#cbd6e4; background:#070d16; font:12px/1.55 "DM Mono",monospace; }
     table { width:100%; margin-top:12px; border-collapse:collapse; overflow:hidden; border:1px solid #1d2a3b; border-radius:10px; background:#0b1421; } th,td { padding:11px 10px; text-align:left; border-bottom:1px solid #1b2838; font-size:12px; white-space:nowrap; } th { color:var(--muted); font:500 10px "DM Mono",monospace; letter-spacing:.08em; text-transform:uppercase; } tr:hover td { background:#111d2c; }
-    @media (max-width:760px) { .container { width:min(100% - 24px,1180px); padding-top:20px; } .site-header { margin-bottom:22px; } .header-link { padding-top:4px; } .summary-card { grid-template-columns:1fr; } .badges { justify-content:flex-start; } .metric-grid,.trajectory-grid,.valuation-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .card { padding:17px; } .pulse-table { min-width:720px; } }
-    @media (max-width:460px) { .search-row { flex-direction:column; } .analyze-btn { width:100%; } .utility-row { align-items:flex-start; flex-direction:column; } .metric-grid,.trajectory-grid,.valuation-grid { grid-template-columns:1fr 1fr; gap:8px; } .metric-box { padding:11px; } .metric-value { font-size:17px; } .trajectory-box .metric-value { font-size:17px; } .card-header { margin-bottom:14px; } table { display:block; overflow-x:auto; } }
+    @media (max-width:760px) { .container { width:min(100% - 24px,1180px); padding-top:20px; } .site-header { margin-bottom:22px; } .header-link { padding-top:4px; } .summary-card { grid-template-columns:1fr; } .badges { justify-content:flex-start; } .metric-grid,.trajectory-grid,.valuation-grid,.pulse-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .card { padding:17px; } }
+    @media (max-width:460px) { .search-row { flex-direction:column; } .analyze-btn { width:100%; } .utility-row { align-items:flex-start; flex-direction:column; } .metric-grid,.trajectory-grid,.valuation-grid { grid-template-columns:1fr 1fr; gap:8px; } .pulse-grid { grid-template-columns:1fr; gap:8px; } .metric-box,.pulse-card { padding:11px; } .metric-value,.pulse-value { font-size:17px; } .trajectory-box .metric-value { font-size:17px; } .card-header { margin-bottom:14px; } table { display:block; overflow-x:auto; } }
 
   </style>
 </head>
@@ -77,7 +84,7 @@
     <div class="toolbar">
       <div class="search-row">
         <input id="ticker" type="text" placeholder="Ticker (e.g. NVDA)" autofocus/>
-        <button class="analyze-btn" onclick="analyze()">Analyze</button>
+        <button id="analyzeBtn" class="analyze-btn" onclick="analyze()">Analyze</button>
       </div>
       <div class="utility-row">
         <div class="utility-controls">
@@ -277,6 +284,12 @@
       if (btn) {
         btn.addEventListener("click", copyJsonToClipboard);
       }
+      document.getElementById("ticker").addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          analyze();
+        }
+      });
     });
 
     function renderBusinessMetrics(m, trajectory, annualIncome) {
@@ -301,16 +314,64 @@
         document.getElementById("quarterlyPulseWrap").innerHTML = '<div class="section-note">No quarterly income and cash-flow history available.</div>';
         return;
       }
-      document.getElementById("quarterlyPulseWrap").innerHTML = `<div class="pulse-table-wrap"><table class="pulse-table"><thead><tr><th>Quarter</th><th>Revenue</th><th>YoY Revenue Growth</th><th>Operating Margin</th><th>EBITDA Margin</th><th>FCF / Margin</th></tr></thead><tbody>${rows.map(row => `<tr><td>${row.quarter || "—"}<span class="date-note">${row.date || ""}</span></td><td>${formatMoney(row.revenue)}</td><td>${formatPct(row.revenue_yoy_growth)}</td><td>${formatPct(row.operating_margin)}</td><td>${formatPct(row.ebitda_margin)}</td><td>${formatMoney(row.fcf)} / ${formatPct(row.fcf_margin)}</td></tr>`).join("")}</tbody></table></div>`;
+      const chronological = rows.slice(0, 4).reverse();
+      const definitions = [
+        { label: "Revenue", key: "revenue", format: formatMoney },
+        { label: "YoY Revenue Growth", key: "revenue_yoy_growth", format: formatPct },
+        { label: "Operating Margin", key: "operating_margin", format: formatPct },
+        { label: "EBITDA Margin", key: "ebitda_margin", format: formatPct },
+        { label: "FCF Margin", key: "fcf_margin", format: formatPct },
+      ];
+
+      document.getElementById("quarterlyPulseWrap").innerHTML = `<div class="pulse-grid">${definitions.map(metric => renderPulseCard(metric, chronological)).join("")}</div>`;
+    }
+
+    function renderPulseCard(metric, rows) {
+      const values = rows.map(row => {
+        const value = Number(row[metric.key]);
+        return row[metric.key] !== null && row[metric.key] !== undefined && Number.isFinite(value) ? value : null;
+      });
+      const valid = values.filter(value => value !== null);
+      let latestIndex = -1;
+      for (let index = values.length - 1; index >= 0; index -= 1) {
+        if (values[index] !== null) {
+          latestIndex = index;
+          break;
+        }
+      }
+      const latestValue = latestIndex >= 0 ? values[latestIndex] : null;
+      const min = valid.length ? Math.min(...valid) : 0;
+      const max = valid.length ? Math.max(...valid) : 0;
+      const range = max - min;
+      const x = index => rows.length > 1 ? 6 + index * (88 / (rows.length - 1)) : 50;
+      const y = value => range === 0 ? 25 : 46 - ((value - min) / range) * 40;
+      const points = values.map((value, index) => value === null ? null : `${x(index)},${y(value)}`);
+      const segments = [];
+      let segment = [];
+      points.forEach(point => {
+        if (point) segment.push(point);
+        else if (segment.length) { segments.push(segment); segment = []; }
+      });
+      if (segment.length) segments.push(segment);
+      const detail = rows.map((row, index) => `${row.quarter || "Quarter"}: ${metric.format(values[index])}`).join(" | ");
+      const lines = segments.map(items => `<polyline class="sparkline-line" points="${items.join(" ")}" />`).join("");
+      const dots = values.map((value, index) => value === null ? "" : `<circle class="sparkline-point" cx="${x(index)}" cy="${y(value)}" r="2.8" tabindex="0" aria-label="${rowLabel(rows[index])}: ${metric.format(value)}"><title>${rowLabel(rows[index])}: ${metric.format(value)}</title></circle>`).join("");
+      const labels = rows.map(row => `<span>${row.quarter || "—"}</span>`).join("");
+
+      return `<article class="pulse-card" title="${detail}"><div class="metric-label">${metric.label}</div><div class="pulse-value">${metric.format(latestValue)}</div><svg class="sparkline" viewBox="0 0 100 52" role="img" aria-label="${metric.label}, latest four quarters">${lines}${dots}</svg><div class="pulse-quarters">${labels}</div></article>`;
+    }
+
+    function rowLabel(row) {
+      return row && row.quarter ? row.quarter : "Quarter";
     }
 
     function renderValuation(m) {
       renderMetrics("valuationMetrics", [
         metricCard("EV / Sales", m.ev_to_sales, null, value => formatMultiple(value, true)),
+        metricCard("P/E", m.earnings_yield, null, value => Number(value) > 0 ? formatMultiple(1 / Number(value), true) : "N/M"),
         metricCard("EV / EBITDA", m.ev_to_ebitda, null, value => formatMultiple(value, m.ev_to_ebitda_applicable)),
         metricCard("EV / FCF", m.ev_to_fcf, null, value => formatMultiple(value, m.ev_to_fcf_applicable)),
         metricCard("FCF Yield", m.fcf_yield, null, value => m.fcf_yield_applicable === false ? "N/M" : formatPct(value)),
-        metricCard("QAV Score", m.quality_adjusted_value_score, null, value => formatNum(value, 2)),
       ]);
     }
 
@@ -352,7 +413,10 @@
       wrap.innerHTML = html;
     }
 
+    let analysisRunning = false;
+
     async function analyze() {
+      if (analysisRunning) return;
       const ticker = document.getElementById("ticker").value.trim().toUpperCase();
       const includePeers = document.getElementById("includePeers").checked;
 
@@ -360,6 +424,9 @@
         alert("Please enter a ticker.");
         return;
       }
+
+      analysisRunning = true;
+      document.getElementById("analyzeBtn").disabled = true;
 
       document.getElementById("errorBox").classList.add("hidden");
       document.getElementById("results").classList.add("hidden");
@@ -439,6 +506,9 @@
         document.getElementById("loader").style.display = "none";
         document.getElementById("errorBox").innerText = "Request failed: " + err.message;
         document.getElementById("errorBox").classList.remove("hidden");
+      } finally {
+        analysisRunning = false;
+        document.getElementById("analyzeBtn").disabled = false;
       }
     }
   </script>
