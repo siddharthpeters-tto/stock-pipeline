@@ -59,20 +59,21 @@
     .trajectory-box .metric-value { font-size:21px; } .subhead { margin:0 0 12px; color:var(--muted); font:500 10px "DM Mono",monospace; letter-spacing:.1em; text-transform:uppercase; }
     .valuation-grid { grid-template-columns:repeat(5,minmax(0,1fr)); }
     .pulse-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
-    .pulse-card { min-width:0; padding:13px 14px 11px; border:1px solid #1d2a3b; border-radius:10px; background:rgba(7,14,24,.55); }
+    .pulse-card { display:grid; grid-template-columns:minmax(0,1fr) minmax(120px,45%); align-items:center; gap:12px; min-width:0; min-height:94px; padding:12px 14px; border:1px solid #1d2a3b; border-radius:10px; background:rgba(7,14,24,.55); }
+    .pulse-copy { min-width:0; }
     .pulse-value { margin-top:7px; color:var(--text); font:500 clamp(18px,2.5vw,24px) "DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; }
     .pulse-change { min-height:15px; margin-top:5px; font:400 10px "DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; }
-    .sparkline { display:block; width:100%; height:45px; margin-top:5px; overflow:visible; }
+    .sparkline { display:block; width:100%; height:54px; overflow:visible; }
     .sparkline-line { fill:none; stroke:var(--green); stroke-width:2; vector-effect:non-scaling-stroke; }
     .sparkline-point { fill:var(--panel-2); stroke:var(--green); stroke-width:1.6; outline:none; vector-effect:non-scaling-stroke; }
+    .sparkline-point.latest { fill:var(--green); stroke:var(--text); stroke-width:2.2; }
     .sparkline-point:hover,.sparkline-point:focus { fill:var(--green); stroke:var(--text); stroke-width:2.4; }
-    .pulse-quarters { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); margin-top:2px; color:var(--muted); font:400 9px "DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; text-align:center; }
     .secondary-btn { height:34px; padding:0 11px; border-color:#34445a; color:#c3ceda; background:#172333; font-size:11px; } .secondary-btn:hover { color:var(--text); background:#203147; }
     .copy-success { color:var(--green); border-color:#3d9d78; background:#123225; } .copy-error { color:var(--red); border-color:#75404a; background:#321a21; }
     pre { max-height:620px; margin:0; padding:16px; overflow:auto; white-space:pre-wrap; word-break:break-word; border:1px solid #1d2a3b; border-radius:10px; color:#cbd6e4; background:#070d16; font:12px/1.55 "DM Mono",monospace; }
     table { width:100%; margin-top:12px; border-collapse:collapse; overflow:hidden; border:1px solid #1d2a3b; border-radius:10px; background:#0b1421; } th,td { padding:11px 10px; text-align:left; border-bottom:1px solid #1b2838; font-size:12px; white-space:nowrap; } th { color:var(--muted); font:500 10px "DM Mono",monospace; letter-spacing:.08em; text-transform:uppercase; } tr:hover td { background:#111d2c; }
     @media (max-width:760px) { .container { width:min(100% - 24px,1180px); padding-top:20px; } .site-header { margin-bottom:22px; } .header-link { padding-top:4px; } .summary-card { grid-template-columns:1fr; } .badges { justify-content:flex-start; } .metric-grid,.trajectory-grid,.valuation-grid,.pulse-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .card { padding:17px; } }
-    @media (max-width:460px) { .search-row { flex-direction:column; } .analyze-btn { width:100%; } .utility-row { align-items:flex-start; flex-direction:column; } .metric-grid,.trajectory-grid,.valuation-grid { grid-template-columns:1fr 1fr; gap:8px; } .pulse-grid { grid-template-columns:1fr; gap:8px; } .metric-box,.pulse-card { padding:11px; } .metric-value,.pulse-value { font-size:17px; } .trajectory-box .metric-value { font-size:17px; } .card-header { margin-bottom:14px; } table { display:block; overflow-x:auto; } }
+    @media (max-width:460px) { .search-row { flex-direction:column; } .analyze-btn { width:100%; } .utility-row { align-items:flex-start; flex-direction:column; } .metric-grid,.trajectory-grid,.valuation-grid { grid-template-columns:1fr 1fr; gap:8px; } .pulse-grid { grid-template-columns:1fr; gap:8px; } .metric-box,.pulse-card { padding:11px; } .pulse-card { grid-template-columns:1fr; gap:4px; } .sparkline { height:46px; } .metric-value,.pulse-value { font-size:17px; } .trajectory-box .metric-value { font-size:17px; } .card-header { margin-bottom:14px; } table { display:block; overflow-x:auto; } }
 
   </style>
 </head>
@@ -340,7 +341,7 @@
       }
       const chronological = rows.slice(0, 4).reverse();
       const definitions = [
-        { label: "Revenue", key: "revenue", format: formatCompactMoney, higherIsBetter: true },
+        { label: "Revenue", key: "revenue", format: formatCompactMoney, hoverFormat: formatMoney, higherIsBetter: true },
         { label: "YoY Revenue Growth", key: "revenue_yoy_growth", format: formatPct, higherIsBetter: true },
         { label: "Operating Margin", key: "operating_margin", format: formatPct, higherIsBetter: true },
         { label: "EBITDA Margin", key: "ebitda_margin", format: formatPct, higherIsBetter: true },
@@ -379,22 +380,17 @@
         else if (segment.length) { segments.push(segment); segment = []; }
       });
       if (segment.length) segments.push(segment);
-      const detail = rows.map((row, index) => `${row.quarter || "Quarter"}: ${metric.format(values[index])}`).join(" | ");
+      const hoverFormat = metric.hoverFormat || metric.format;
+      const detail = rows.map((row, index) => `${row.quarter || "Quarter"}: ${hoverFormat(values[index])}`).join(" | ");
       const lines = segments.map(items => `<polyline class="sparkline-line" points="${items.join(" ")}" />`).join("");
-      const dots = values.map((value, index) => value === null ? "" : `<circle class="sparkline-point" cx="${x(index)}" cy="${y(value)}" r="2.8" tabindex="0" aria-label="${rowLabel(rows[index])}: ${metric.format(value)}"><title>${rowLabel(rows[index])}: ${metric.format(value)}</title></circle>`).join("");
-      const labels = rows.map(row => `<span>${shortQuarter(row.quarter)}</span>`).join("");
+      const dots = values.map((value, index) => value === null ? "" : `<circle class="sparkline-point${index === latestIndex ? " latest" : ""}" cx="${x(index)}" cy="${y(value)}" r="2.8" tabindex="0" aria-label="${rowLabel(rows[index])}: ${hoverFormat(value)}"><title>${rowLabel(rows[index])}: ${hoverFormat(value)}</title></circle>`).join("");
       const comparison = priorValue === null ? "" : `${directionArrow(change)} from ${metric.format(priorValue)}${metric.key === "revenue" ? "" : " last quarter"}`;
 
-      return `<article class="pulse-card" title="${detail}"><div class="metric-label">${metric.label}</div><div class="pulse-value">${metric.format(latestValue)}</div><div class="pulse-change ${directionClass(change, metric.higherIsBetter)}">${comparison}</div><svg class="sparkline" viewBox="0 0 100 44" role="img" aria-label="${metric.label}, latest four quarters">${lines}${dots}</svg><div class="pulse-quarters">${labels}</div></article>`;
+      return `<article class="pulse-card" title="${detail}"><div class="pulse-copy"><div class="metric-label">${metric.label}</div><div class="pulse-value">${metric.format(latestValue)}</div><div class="pulse-change ${directionClass(change, metric.higherIsBetter)}">${comparison}</div></div><svg class="sparkline" viewBox="0 0 100 44" role="img" aria-label="${metric.label}, latest four quarters">${lines}${dots}</svg></article>`;
     }
 
     function rowLabel(row) {
       return row && row.quarter ? row.quarter : "Quarter";
-    }
-
-    function shortQuarter(label) {
-      const match = String(label || "").match(/^(Q[1-4]) FY(\d{2})$/);
-      return match ? `${match[1]}'${match[2]}` : (label || "—");
     }
 
     function renderValuation(m) {
