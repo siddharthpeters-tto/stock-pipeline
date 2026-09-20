@@ -43,6 +43,7 @@
     .error { margin-top:18px; padding:14px 16px; border:1px solid #713b43; border-radius:10px; color:#ffc6c7; background:#2b151d; font-size:13px; }
     .card { margin-top:18px; padding:22px; border:1px solid var(--line); border-radius:var(--radius); background:linear-gradient(145deg,rgba(16,24,39,.96),rgba(11,19,31,.96)); box-shadow:0 14px 32px rgba(0,0,0,.12); }
     .card-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px; }
+    #quarterlyReported { color:#b8c5d4; font-weight:600; }
     .section-note { margin-top:5px; color:var(--muted); font-size:12px; }
     .summary-card { display:grid; grid-template-columns:1fr auto; align-items:end; gap:20px; }
     .ticker-title { margin:6px 0 0; font-size:clamp(34px,7vw,64px); letter-spacing:-.07em; line-height:.95; }
@@ -58,13 +59,14 @@
     .trajectory-box .metric-value { font-size:21px; } .subhead { margin:0 0 12px; color:var(--muted); font:500 10px "DM Mono",monospace; letter-spacing:.1em; text-transform:uppercase; }
     .valuation-grid { grid-template-columns:repeat(5,minmax(0,1fr)); }
     .pulse-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
-    .pulse-card { min-width:0; padding:14px; border:1px solid #1d2a3b; border-radius:10px; background:rgba(7,14,24,.55); }
+    .pulse-card { min-width:0; padding:13px 14px 11px; border:1px solid #1d2a3b; border-radius:10px; background:rgba(7,14,24,.55); }
     .pulse-value { margin-top:7px; color:var(--text); font:500 clamp(18px,2.5vw,24px) "DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; }
-    .sparkline { display:block; width:100%; height:54px; margin-top:10px; overflow:visible; }
+    .pulse-change { min-height:15px; margin-top:5px; font:400 10px "DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .sparkline { display:block; width:100%; height:45px; margin-top:5px; overflow:visible; }
     .sparkline-line { fill:none; stroke:var(--green); stroke-width:2; vector-effect:non-scaling-stroke; }
     .sparkline-point { fill:var(--panel-2); stroke:var(--green); stroke-width:1.6; outline:none; vector-effect:non-scaling-stroke; }
     .sparkline-point:hover,.sparkline-point:focus { fill:var(--green); stroke:var(--text); stroke-width:2.4; }
-    .pulse-quarters { display:flex; justify-content:space-between; gap:4px; margin-top:5px; color:var(--muted); font:400 9px "DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .pulse-quarters { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); margin-top:2px; color:var(--muted); font:400 9px "DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; text-align:center; }
     .secondary-btn { height:34px; padding:0 11px; border-color:#34445a; color:#c3ceda; background:#172333; font-size:11px; } .secondary-btn:hover { color:var(--text); background:#203147; }
     .copy-success { color:var(--green); border-color:#3d9d78; background:#123225; } .copy-error { color:var(--red); border-color:#75404a; background:#321a21; }
     pre { max-height:620px; margin:0; padding:16px; overflow:auto; white-space:pre-wrap; word-break:break-word; border:1px solid #1d2a3b; border-radius:10px; color:#cbd6e4; background:#070d16; font:12px/1.55 "DM Mono",monospace; }
@@ -200,14 +202,37 @@
       return "$" + Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 });
     }
 
-    function metricCard(label, value, delta = null, valueFormatter = formatPct, deltaUnit = "pp") {
-      const deltaText = delta === null || delta === undefined ? "" : `<div class="metric-delta ${deltaClass(delta)}">${formatDelta(delta, deltaUnit)} vs prior FY</div>`;
-      return `<div class="metric-box"><div class="metric-label">${label}</div><div class="metric-value ${valueClass(value)}">${valueFormatter(value)}</div>${deltaText}</div>`;
+    function formatCompactMoney(value) {
+      if (value === null || value === undefined || !Number.isFinite(Number(value))) return "—";
+      const number = Number(value);
+      const absolute = Math.abs(number);
+      if (absolute >= 1e9) return `${number < 0 ? "−" : ""}$${(absolute / 1e9).toFixed(1)}B`;
+      if (absolute >= 1e6) return `${number < 0 ? "−" : ""}$${(absolute / 1e6).toFixed(1)}M`;
+      return formatMoney(number);
     }
 
-    function metricCardPrior(label, value, prior, valueFormatter = formatPct) {
-      const priorText = prior === null || prior === undefined || !Number.isFinite(Number(prior)) ? "—" : `from ${valueFormatter(prior)}`;
-      return `<div class="metric-box"><div class="metric-label">${label}</div><div class="metric-value ${valueClass(value)}">${valueFormatter(value)}</div><div class="metric-delta">${priorText} prior FY</div></div>`;
+    function directionClass(change, higherIsBetter = true) {
+      if (change === null || change === undefined || !Number.isFinite(Number(change)) || Number(change) === 0) return "unavailable";
+      const improved = higherIsBetter ? Number(change) > 0 : Number(change) < 0;
+      return improved ? "positive" : "negative";
+    }
+
+    function directionArrow(change) {
+      if (change === null || change === undefined || !Number.isFinite(Number(change))) return "";
+      return Number(change) > 0 ? "↑" : Number(change) < 0 ? "↓" : "→";
+    }
+
+    function metricCard(label, value, delta = null, valueFormatter = formatPct, deltaUnit = "pp", valueSemanticClass = null) {
+      const deltaText = delta === null || delta === undefined ? "" : `<div class="metric-delta ${deltaClass(delta)}">${formatDelta(delta, deltaUnit)} vs prior FY</div>`;
+      const className = valueSemanticClass === null ? valueClass(value) : valueSemanticClass;
+      return `<div class="metric-box"><div class="metric-label">${label}</div><div class="metric-value ${className}">${valueFormatter(value)}</div>${deltaText}</div>`;
+    }
+
+    function metricCardPrior(label, value, prior, valueFormatter = formatPct, higherIsBetter = true) {
+      const comparable = value !== null && value !== undefined && prior !== null && prior !== undefined && Number.isFinite(Number(value)) && Number.isFinite(Number(prior));
+      const change = comparable ? Number(value) - Number(prior) : null;
+      const priorText = comparable ? `${directionArrow(change)} from ${valueFormatter(prior)}` : "— prior FY";
+      return `<div class="metric-box"><div class="metric-label">${label}</div><div class="metric-value">${valueFormatter(value)}</div><div class="metric-delta ${directionClass(change, higherIsBetter)}">${priorText}</div></div>`;
     }
 
     function metricCardDetail(label, value, detail, valueFormatter = formatPct, detailClass = "") {
@@ -295,14 +320,13 @@
     function renderBusinessMetrics(m, trajectory, annualIncome) {
       const latestRevenue = annualIncome && annualIncome.revenue;
       renderMetrics("businessMetrics", [
-        metricCardDetail("Revenue", latestRevenue, trajectory.revenue_growth_latest == null ? "—" : `${formatPct(trajectory.revenue_growth_latest)} YoY growth`, formatMoney, deltaClass(trajectory.revenue_growth_latest)),
+        metricCardDetail("Revenue", latestRevenue, trajectory.revenue_growth_latest == null ? "—" : `${directionArrow(trajectory.revenue_growth_latest)} ${formatPct(trajectory.revenue_growth_latest)} YoY`, formatCompactMoney, directionClass(trajectory.revenue_growth_latest, true)),
         metricCardPrior("Gross Margin", trajectory.gross_margin_latest, trajectory.gross_margin_prior),
         metricCardPrior("Operating Margin", trajectory.operating_margin_latest, trajectory.operating_margin_prior),
         metricCardPrior("EBITDA Margin", trajectory.ebitda_margin_latest, trajectory.ebitda_margin_prior),
         metricCardPrior("FCF Margin", trajectory.fcf_margin_latest, trajectory.fcf_margin_prior),
         metricCardPrior("ROIC", trajectory.roic_latest, trajectory.roic_prior),
-        metricCardPrior("SBC / Revenue", trajectory.sbc_to_revenue_latest, trajectory.sbc_to_revenue_prior),
-        metricCard("Net Debt / EBITDA", m.net_debt_to_ebitda, null, value => formatNum(value, 1, "x"), "number"),
+        metricCard("Net Debt / EBITDA", m.net_debt_to_ebitda, null, value => formatNum(value, 1, "x"), "number", Number(m.net_debt_to_ebitda) < 0 ? "positive" : ""),
       ]);
     }
 
@@ -316,11 +340,11 @@
       }
       const chronological = rows.slice(0, 4).reverse();
       const definitions = [
-        { label: "Revenue", key: "revenue", format: formatMoney },
-        { label: "YoY Revenue Growth", key: "revenue_yoy_growth", format: formatPct },
-        { label: "Operating Margin", key: "operating_margin", format: formatPct },
-        { label: "EBITDA Margin", key: "ebitda_margin", format: formatPct },
-        { label: "FCF Margin", key: "fcf_margin", format: formatPct },
+        { label: "Revenue", key: "revenue", format: formatCompactMoney, higherIsBetter: true },
+        { label: "YoY Revenue Growth", key: "revenue_yoy_growth", format: formatPct, higherIsBetter: true },
+        { label: "Operating Margin", key: "operating_margin", format: formatPct, higherIsBetter: true },
+        { label: "EBITDA Margin", key: "ebitda_margin", format: formatPct, higherIsBetter: true },
+        { label: "FCF Margin", key: "fcf_margin", format: formatPct, higherIsBetter: true },
       ];
 
       document.getElementById("quarterlyPulseWrap").innerHTML = `<div class="pulse-grid">${definitions.map(metric => renderPulseCard(metric, chronological)).join("")}</div>`;
@@ -340,11 +364,13 @@
         }
       }
       const latestValue = latestIndex >= 0 ? values[latestIndex] : null;
+      const priorValue = latestIndex > 0 ? values[latestIndex - 1] : null;
+      const change = latestValue !== null && priorValue !== null ? latestValue - priorValue : null;
       const min = valid.length ? Math.min(...valid) : 0;
       const max = valid.length ? Math.max(...valid) : 0;
       const range = max - min;
-      const x = index => rows.length > 1 ? 6 + index * (88 / (rows.length - 1)) : 50;
-      const y = value => range === 0 ? 25 : 46 - ((value - min) / range) * 40;
+      const x = index => rows.length ? ((index + 0.5) * 100) / rows.length : 50;
+      const y = value => range === 0 ? 22 : 40 - ((value - min) / range) * 36;
       const points = values.map((value, index) => value === null ? null : `${x(index)},${y(value)}`);
       const segments = [];
       let segment = [];
@@ -356,13 +382,19 @@
       const detail = rows.map((row, index) => `${row.quarter || "Quarter"}: ${metric.format(values[index])}`).join(" | ");
       const lines = segments.map(items => `<polyline class="sparkline-line" points="${items.join(" ")}" />`).join("");
       const dots = values.map((value, index) => value === null ? "" : `<circle class="sparkline-point" cx="${x(index)}" cy="${y(value)}" r="2.8" tabindex="0" aria-label="${rowLabel(rows[index])}: ${metric.format(value)}"><title>${rowLabel(rows[index])}: ${metric.format(value)}</title></circle>`).join("");
-      const labels = rows.map(row => `<span>${row.quarter || "—"}</span>`).join("");
+      const labels = rows.map(row => `<span>${shortQuarter(row.quarter)}</span>`).join("");
+      const comparison = priorValue === null ? "" : `${directionArrow(change)} from ${metric.format(priorValue)}${metric.key === "revenue" ? "" : " last quarter"}`;
 
-      return `<article class="pulse-card" title="${detail}"><div class="metric-label">${metric.label}</div><div class="pulse-value">${metric.format(latestValue)}</div><svg class="sparkline" viewBox="0 0 100 52" role="img" aria-label="${metric.label}, latest four quarters">${lines}${dots}</svg><div class="pulse-quarters">${labels}</div></article>`;
+      return `<article class="pulse-card" title="${detail}"><div class="metric-label">${metric.label}</div><div class="pulse-value">${metric.format(latestValue)}</div><div class="pulse-change ${directionClass(change, metric.higherIsBetter)}">${comparison}</div><svg class="sparkline" viewBox="0 0 100 44" role="img" aria-label="${metric.label}, latest four quarters">${lines}${dots}</svg><div class="pulse-quarters">${labels}</div></article>`;
     }
 
     function rowLabel(row) {
       return row && row.quarter ? row.quarter : "Quarter";
+    }
+
+    function shortQuarter(label) {
+      const match = String(label || "").match(/^(Q[1-4]) FY(\d{2})$/);
+      return match ? `${match[1]}'${match[2]}` : (label || "—");
     }
 
     function renderValuation(m) {
