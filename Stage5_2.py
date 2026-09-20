@@ -94,6 +94,7 @@ from dotenv import load_dotenv
 from fmp_helpers import FmpRequestCounter, normalize_fmp_rows, normalize_symbol, safe_float
 from stock_research.fmp_common import median, safe_div, to_float, clamp
 from stock_research.peer_data import peer_symbols_from_list
+from stock_research.quarterly import compute_quarterly_pulse, fetch_quarterly_bundle
 
 # =========================
 # CONFIG
@@ -663,9 +664,10 @@ def analyze_single_stock_stage5_2(
     symbol: str,
     level1_row: Dict[str, Any],
     target_fundamentals: Optional[Dict[str, Any]] = None,
+    request_counter: Optional[FmpRequestCounter] = None,
 ) -> Dict[str, Any]:
 
-    api = FmpClient(BASE_URL, FMP_API_KEY)
+    api = FmpClient(BASE_URL, FMP_API_KEY, request_counter)
 
     target = latest_target_fundamentals(
         target_fundamentals or level1_row.get("target_fundamentals")
@@ -781,6 +783,7 @@ def analyze_single_stock_stage5_2(
     qav_score = score_quality_adjusted_value(m, peer_medians)
 
     investment_signal = investment_view(q_bucket, v_bucket)
+    quarterly_bundle = fetch_quarterly_bundle(api, symbol, read_cache, write_cache)
 
     return {
         "ticker": symbol,
@@ -792,6 +795,7 @@ def analyze_single_stock_stage5_2(
         "metrics": m,
         "peer_medians": peer_medians,
         "peer_symbols": peer_symbols,
+        "quarterly_pulse": compute_quarterly_pulse(quarterly_bundle),
     }
 
 

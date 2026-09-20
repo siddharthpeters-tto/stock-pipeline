@@ -57,11 +57,12 @@
     .trajectory-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } .trajectory-box { min-height:118px; }
     .trajectory-box .metric-value { font-size:21px; } .subhead { margin:0 0 12px; color:var(--muted); font:500 10px "DM Mono",monospace; letter-spacing:.1em; text-transform:uppercase; }
     .valuation-grid { grid-template-columns:repeat(5,minmax(0,1fr)); }
+    .pulse-table-wrap { overflow-x:auto; } .pulse-table { min-width:760px; } .pulse-table td:first-child { color:var(--text); font-family:"DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; } .date-note { display:block; margin-top:4px; color:var(--muted); font:400 10px "DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; }
     .secondary-btn { height:34px; padding:0 11px; border-color:#34445a; color:#c3ceda; background:#172333; font-size:11px; } .secondary-btn:hover { color:var(--text); background:#203147; }
     .copy-success { color:var(--green); border-color:#3d9d78; background:#123225; } .copy-error { color:var(--red); border-color:#75404a; background:#321a21; }
     pre { max-height:620px; margin:0; padding:16px; overflow:auto; white-space:pre-wrap; word-break:break-word; border:1px solid #1d2a3b; border-radius:10px; color:#cbd6e4; background:#070d16; font:12px/1.55 "DM Mono",monospace; }
     table { width:100%; margin-top:12px; border-collapse:collapse; overflow:hidden; border:1px solid #1d2a3b; border-radius:10px; background:#0b1421; } th,td { padding:11px 10px; text-align:left; border-bottom:1px solid #1b2838; font-size:12px; white-space:nowrap; } th { color:var(--muted); font:500 10px "DM Mono",monospace; letter-spacing:.08em; text-transform:uppercase; } tr:hover td { background:#111d2c; }
-    @media (max-width:760px) { .container { width:min(100% - 24px,1180px); padding-top:20px; } .site-header { margin-bottom:22px; } .header-link { padding-top:4px; } .summary-card { grid-template-columns:1fr; } .badges { justify-content:flex-start; } .metric-grid,.trajectory-grid,.valuation-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .card { padding:17px; } }
+    @media (max-width:760px) { .container { width:min(100% - 24px,1180px); padding-top:20px; } .site-header { margin-bottom:22px; } .header-link { padding-top:4px; } .summary-card { grid-template-columns:1fr; } .badges { justify-content:flex-start; } .metric-grid,.trajectory-grid,.valuation-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .card { padding:17px; } .pulse-table { min-width:720px; } }
     @media (max-width:460px) { .search-row { flex-direction:column; } .analyze-btn { width:100%; } .utility-row { align-items:flex-start; flex-direction:column; } .metric-grid,.trajectory-grid,.valuation-grid { grid-template-columns:1fr 1fr; gap:8px; } .metric-box { padding:11px; } .metric-value { font-size:17px; } .trajectory-box .metric-value { font-size:17px; } .card-header { margin-bottom:14px; } table { display:block; overflow-x:auto; } }
 
   </style>
@@ -118,21 +119,18 @@
       </section>
 
       <section class="card">
-        <div class="card-header"><div><div class="section-kicker">Fundamentals</div><h2>Business Today</h2></div><div class="section-note">Current FY levels</div></div>
+        <div class="card-header"><div><div class="section-kicker">Market lens</div><h2>Valuation</h2></div><div class="section-note">Applicability-aware multiples</div></div>
+        <div id="valuationMetrics" class="metric-grid valuation-grid"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-header"><div><div class="section-kicker">Fundamentals</div><h2>Business Today</h2></div><div class="section-note">Current FY vs prior FY</div></div>
         <div id="businessMetrics" class="metric-grid"></div>
       </section>
 
       <section class="card">
-        <div class="card-header"><div><div class="section-kicker">Annual direction</div><h2>Trajectory</h2></div><div id="trajectoryPeriods" class="section-note"></div></div>
-        <div class="subhead">Current level</div>
-        <div id="trajectoryCurrent" class="metric-grid trajectory-grid"></div>
-        <div class="subhead" style="margin-top:22px;">Change vs prior FY</div>
-        <div id="trajectoryChange" class="metric-grid trajectory-grid"></div>
-      </section>
-
-      <section class="card">
-        <div class="card-header"><div><div class="section-kicker">Market lens</div><h2>Valuation</h2></div><div class="section-note">Applicability-aware multiples</div></div>
-        <div id="valuationMetrics" class="metric-grid valuation-grid"></div>
+        <div class="card-header"><div><div class="section-kicker">Short-term pulse</div><h2>Quarterly Pulse</h2></div><div id="quarterlyReported" class="section-note"></div></div>
+        <div id="quarterlyPulseWrap"></div>
       </section>
 
       <div id="comparisonCard" class="card hidden">
@@ -186,9 +184,27 @@
       return Number(value) > 0 ? "positive" : Number(value) < 0 ? "negative" : "caution";
     }
 
+    function valueClass(value) {
+      return value !== null && value !== undefined && Number.isFinite(Number(value)) && Number(value) < 0 ? "negative" : "";
+    }
+
+    function formatMoney(value) {
+      if (value === null || value === undefined || !Number.isFinite(Number(value))) return "—";
+      return "$" + Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 });
+    }
+
     function metricCard(label, value, delta = null, valueFormatter = formatPct, deltaUnit = "pp") {
       const deltaText = delta === null || delta === undefined ? "" : `<div class="metric-delta ${deltaClass(delta)}">${formatDelta(delta, deltaUnit)} vs prior FY</div>`;
-      return `<div class="metric-box"><div class="metric-label">${label}</div><div class="metric-value">${valueFormatter(value)}</div>${deltaText}</div>`;
+      return `<div class="metric-box"><div class="metric-label">${label}</div><div class="metric-value ${valueClass(value)}">${valueFormatter(value)}</div>${deltaText}</div>`;
+    }
+
+    function metricCardPrior(label, value, prior, valueFormatter = formatPct) {
+      const priorText = prior === null || prior === undefined || !Number.isFinite(Number(prior)) ? "—" : `from ${valueFormatter(prior)}`;
+      return `<div class="metric-box"><div class="metric-label">${label}</div><div class="metric-value ${valueClass(value)}">${valueFormatter(value)}</div><div class="metric-delta">${priorText} prior FY</div></div>`;
+    }
+
+    function metricCardDetail(label, value, detail, valueFormatter = formatPct, detailClass = "") {
+      return `<div class="metric-box"><div class="metric-label">${label}</div><div class="metric-value ${valueClass(value)}">${valueFormatter(value)}</div><div class="metric-delta ${detailClass}">${detail || "—"}</div></div>`;
     }
 
     function renderMetrics(id, cards) {
@@ -263,43 +279,29 @@
       }
     });
 
-    function renderBusinessMetrics(m, trajectory) {
+    function renderBusinessMetrics(m, trajectory, annualIncome) {
+      const latestRevenue = annualIncome && annualIncome.revenue;
       renderMetrics("businessMetrics", [
-        metricCard("Revenue CAGR (5Y)", m.rev_cagr_5y),
-        metricCard("Gross Margin", trajectory.gross_margin_latest, trajectory.gross_margin_delta_1y),
-        metricCard("Operating Margin", trajectory.operating_margin_latest, trajectory.operating_margin_delta_1y),
-        metricCard("EBITDA Margin", trajectory.ebitda_margin_latest, trajectory.ebitda_margin_delta_1y),
-        metricCard("FCF Margin", trajectory.fcf_margin_latest, trajectory.fcf_margin_delta_1y),
-        metricCard("ROIC", trajectory.roic_latest, trajectory.roic_delta_1y),
-        metricCard("SBC / Revenue", trajectory.sbc_to_revenue_latest, trajectory.sbc_to_revenue_delta_1y),
+        metricCardDetail("Revenue", latestRevenue, trajectory.revenue_growth_latest == null ? "—" : `${formatPct(trajectory.revenue_growth_latest)} YoY growth`, formatMoney, deltaClass(trajectory.revenue_growth_latest)),
+        metricCardPrior("Gross Margin", trajectory.gross_margin_latest, trajectory.gross_margin_prior),
+        metricCardPrior("Operating Margin", trajectory.operating_margin_latest, trajectory.operating_margin_prior),
+        metricCardPrior("EBITDA Margin", trajectory.ebitda_margin_latest, trajectory.ebitda_margin_prior),
+        metricCardPrior("FCF Margin", trajectory.fcf_margin_latest, trajectory.fcf_margin_prior),
+        metricCardPrior("ROIC", trajectory.roic_latest, trajectory.roic_prior),
+        metricCardPrior("SBC / Revenue", trajectory.sbc_to_revenue_latest, trajectory.sbc_to_revenue_prior),
         metricCard("Net Debt / EBITDA", m.net_debt_to_ebitda, null, value => formatNum(value, 1, "x"), "number"),
       ]);
     }
 
-    function renderTrajectory(trajectory) {
-      const unavailable = !trajectory || typeof trajectory !== "object";
-      const t = unavailable ? {} : trajectory;
-      document.getElementById("trajectoryPeriods").innerText = t.periods?.latest && t.periods?.prior ? `${t.periods.prior} → ${t.periods.latest}` : "FY history unavailable";
-      renderMetrics("trajectoryCurrent", [
-        metricCard("Revenue Growth", t.revenue_growth_latest),
-        metricCard("Gross Margin", t.gross_margin_latest),
-        metricCard("Operating Margin", t.operating_margin_latest),
-        metricCard("EBITDA Margin", t.ebitda_margin_latest),
-        metricCard("FCF Margin", t.fcf_margin_latest),
-        metricCard("ROIC", t.roic_latest),
-        metricCard("SBC / Revenue", t.sbc_to_revenue_latest),
-        metricCard("Share Count", t.shares_latest, null, value => value == null ? "—" : formatNum(value, 0)),
-      ]);
-      renderMetrics("trajectoryChange", [
-        metricCard("Revenue Growth", t.revenue_growth_delta),
-        metricCard("Gross Margin", t.gross_margin_delta_1y),
-        metricCard("Operating Margin", t.operating_margin_delta_1y),
-        metricCard("EBITDA Margin", t.ebitda_margin_delta_1y),
-        metricCard("FCF Margin", t.fcf_margin_delta_1y),
-        metricCard("ROIC", t.roic_delta_1y),
-        metricCard("SBC / Revenue", t.sbc_to_revenue_delta_1y),
-        metricCard("Share Count Change", t.share_count_change_1y, null, value => value == null ? "—" : formatNum(value, 0), "number"),
-      ]);
+    function renderQuarterlyPulse(pulse) {
+      const rows = pulse && Array.isArray(pulse.quarters) ? pulse.quarters : [];
+      const reported = pulse && pulse.latest_reported && pulse.latest_reported.display;
+      document.getElementById("quarterlyReported").innerText = reported ? `Last reported: ${reported}` : "Quarterly history unavailable";
+      if (!rows.length) {
+        document.getElementById("quarterlyPulseWrap").innerHTML = '<div class="section-note">No quarterly income and cash-flow history available.</div>';
+        return;
+      }
+      document.getElementById("quarterlyPulseWrap").innerHTML = `<div class="pulse-table-wrap"><table class="pulse-table"><thead><tr><th>Quarter</th><th>Revenue</th><th>YoY Revenue Growth</th><th>Operating Margin</th><th>EBITDA Margin</th><th>FCF / Margin</th></tr></thead><tbody>${rows.map(row => `<tr><td>${row.quarter || "—"}<span class="date-note">${row.date || ""}</span></td><td>${formatMoney(row.revenue)}</td><td>${formatPct(row.revenue_yoy_growth)}</td><td>${formatPct(row.operating_margin)}</td><td>${formatPct(row.ebitda_margin)}</td><td>${formatMoney(row.fcf)} / ${formatPct(row.fcf_margin)}</td></tr>`).join("")}</tbody></table></div>`;
     }
 
     function renderValuation(m) {
@@ -400,6 +402,7 @@
 
         const s1 = data.stage5_1 || {};
         const trajectory = s1.trajectory_metrics || {};
+        const annualIncome = s1.target_fundamentals?.income || {};
         const s2 = data.stage5_2 || {};
         const m = s2.metrics || {};
 
@@ -416,8 +419,8 @@
           <p><strong>${s2.investment_view || "—"}</strong> <span class="section-note">Investment view</span></p>
         `;
 
-        renderBusinessMetrics(m, trajectory);
-        renderTrajectory(trajectory);
+        renderBusinessMetrics(m, trajectory, annualIncome);
+        renderQuarterlyPulse(s2.quarterly_pulse);
         renderValuation({ ...m, quality_adjusted_value_score: s2.quality_adjusted_value_score });
         document.getElementById("json").innerText = JSON.stringify(data, null, 2);
 
