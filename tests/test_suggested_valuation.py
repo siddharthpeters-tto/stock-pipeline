@@ -6,6 +6,7 @@ from stock_research.suggested_valuation import (
     REQUIRED_RETURN,
     calculate_suggested_valuation,
     extract_valuation_inputs,
+    quote_currency_from_payload,
     terminal_multiple,
 )
 
@@ -28,7 +29,7 @@ def inputs(revenues, margins, shares=100.0):
 
 def test_stable_profitable_company_and_exact_compounding():
     data = inputs([1000, 1100, 1210, 1331, 1464.1], [0.20] * 5)
-    result = calculate_suggested_valuation(data, current_price=100, roic=0.15, net_debt_to_ebitda=1.0)
+    result = calculate_suggested_valuation(data, current_price=100)
 
     assert result["applicable"] is True
     assert result["base"]["revenue_cagr"] == pytest.approx(0.10)
@@ -48,11 +49,12 @@ def test_extreme_recent_growth_is_normalized_and_base_capped():
     assert result["optimistic"]["revenue_cagr"] <= 0.25
 
 
-def test_volatile_growth_sets_half_standard_deviation_spread():
+def test_extreme_growth_volatility_cannot_create_more_than_five_point_spread():
     result = calculate_suggested_valuation(inputs([100, 150, 120, 180, 162], [0.20] * 5), 50)
     debug = result["methodology"]["growth_debug"]
-    assert debug["scenario_spread"] == pytest.approx(0.5 * debug["historical_growth_std_dev"])
-    assert debug["scenario_spread"] > 0.02
+    assert debug["scenario_spread"] == pytest.approx(0.05)
+    assert result["base"]["revenue_cagr"] - result["conservative"]["revenue_cagr"] == pytest.approx(0.05)
+    assert result["optimistic"]["revenue_cagr"] - result["base"]["revenue_cagr"] == pytest.approx(0.05)
 
 
 def test_stable_and_volatile_fcf_margin_percentiles_and_ordering():
@@ -64,8 +66,15 @@ def test_stable_and_volatile_fcf_margin_percentiles_and_ordering():
     volatile = calculate_suggested_valuation(inputs([100, 110, 120, 130, 140], [0.02, 0.30, 0.10, 0.40, 0.20]), 50)
     assert volatile["conservative"]["fcf_margin"] == pytest.approx(0.10)
     assert volatile["base"]["fcf_margin"] == pytest.approx(0.20)
-    assert volatile["optimistic"]["fcf_margin"] == pytest.approx(0.30)
+    assert volatile["optimistic"]["fcf_margin"] == pytest.approx(0.40)
     assert volatile["conservative"]["fcf_margin"] <= volatile["base"]["fcf_margin"] <= volatile["optimistic"]["fcf_margin"]
+
+
+def test_old_low_fcf_years_do_not_distort_recent_three_year_scenarios():
+    result = calculate_suggested_valuation(inputs([100, 110, 120, 130, 140], [-0.01, 0.05, 0.205, 0.177, 0.209]), 50)
+    assert result["conservative"]["fcf_margin"] == pytest.approx(0.177)
+    assert result["base"]["fcf_margin"] == pytest.approx(0.205)
+    assert result["optimistic"]["fcf_margin"] == pytest.approx(0.209)
 
 
 @pytest.mark.parametrize(
@@ -82,21 +91,22 @@ def test_unavailable_cases(data, reason):
     assert calculate_suggested_valuation(data, 50) == {"applicable": False, "reason": reason}
 
 
-def test_terminal_multiple_floor_ceiling_and_quality_adjustments():
-    floor = terminal_multiple(0.0, roic=0.05, fcf_margin=0.10, net_debt_to_ebitda=1.0)
-    assert floor == {"growth_derived_multiple": 12.0, "quality_adjustment": -2.0, "terminal_p_fcf": 12.0}
+def test_terminal_multiple_floor_ceiling_and_no_quality_cliffs():
+    floor = terminal_multiple(0.0)
+    assert floor == {"growth_derived_multiple": 12.0, "quality_adjustment": 0.0, "terminal_p_fcf": 12.0}
 
-    ceiling = terminal_multiple(0.25, roic=0.25, fcf_margin=0.20, net_debt_to_ebitda=1.0)
+    ceiling = terminal_multiple(0.25)
     assert ceiling["growth_derived_multiple"] == pytest.approx(32.0)
-    assert ceiling["quality_adjustment"] == pytest.approx(2.0)
+    assert ceiling["quality_adjustment"] == pytest.approx(0.0)
     assert ceiling["terminal_p_fcf"] == pytest.approx(30.0)
 
-    negative = terminal_multiple(0.10, roic=0.25, fcf_margin=0.20, net_debt_to_ebitda=3.5)
-    assert negative["quality_adjustment"] == pytest.approx(-2.0)
+    below = terminal_multiple(0.1499)["terminal_p_fcf"]
+    above = terminal_multiple(0.1501)["terminal_p_fcf"]
+    assert above - below == pytest.approx(0.016)
 
 
 def test_scenario_assumptions_and_values_are_ordered():
-    result = calculate_suggested_valuation(inputs([100, 108, 119, 130, 145], [0.10, 0.12, 0.14, 0.16, 0.18]), 50, roic=0.22)
+    result = calculate_suggested_valuation(inputs([100, 108, 119, 130, 145], [0.10, 0.12, 0.14, 0.16, 0.18]), 50)
     for field in ("revenue_cagr", "fcf_margin", "terminal_p_fcf", "buy_below_price"):
         assert result["conservative"][field] <= result["base"][field] <= result["optimistic"][field]
 
@@ -122,3 +132,14 @@ def test_input_extraction_uses_existing_bundle_and_adds_no_requests(monkeypatch)
     assert extracted["current_share_count"] == pytest.approx(100)
     assert len(extracted["annual_observations"]) == 3
     assert extracted["annual_observations"][-1]["fcf_margin"] == pytest.approx(0.20)
+
+
+def test_currency_mismatch_is_inapplicable_without_fx_or_adr_conversion():
+    data = inputs([100, 110, 120], [0.10, 0.11, 0.12])
+    data["financial_statement_currency"] = "TWD"
+    result = calculate_suggested_valuation(data, 50, quote_currency="USD")
+    assert result == {
+        "applicable": False,
+        "reason": "financial statement and quote currencies are not directly comparable",
+    }
+    assert quote_currency_from_payload({"exchange": "NASDAQ Global Select Market"}) == "USD"

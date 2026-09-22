@@ -95,7 +95,7 @@ from fmp_helpers import FmpRequestCounter, normalize_fmp_rows, normalize_symbol,
 from stock_research.fmp_common import median, safe_div, to_float, clamp
 from stock_research.peer_data import peer_symbols_from_list
 from stock_research.quarterly import compute_quarterly_pulse, fetch_quarterly_bundle
-from stock_research.suggested_valuation import calculate_suggested_valuation
+from stock_research.suggested_valuation import calculate_suggested_valuation, quote_currency_from_payload
 
 # =========================
 # CONFIG
@@ -788,8 +788,7 @@ def analyze_single_stock_stage5_2(
     suggested_valuation = calculate_suggested_valuation(
         level1_row.get("suggested_valuation_inputs", {}),
         current_price=live_price,
-        roic=m.get("roic"),
-        net_debt_to_ebitda=m.get("net_debt_to_ebitda"),
+        quote_currency=quote_currency_from_payload(quote),
     )
 
     return {
@@ -1034,8 +1033,7 @@ def main():
             suggested_valuation = calculate_suggested_valuation(
                 r.get("suggested_valuation_inputs", {}),
                 current_price=live_price,
-                roic=m.get("roic"),
-                net_debt_to_ebitda=m.get("net_debt_to_ebitda"),
+                quote_currency=quote_currency_from_payload(quote),
             )
 
 
