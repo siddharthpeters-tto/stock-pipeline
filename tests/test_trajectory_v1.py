@@ -213,3 +213,5 @@ def test_stage5_1_computes_trajectory_from_the_single_annual_bundle(monkeypatch)
     assert calls == ["AAPL"]
     assert result["trajectory_metrics"]["basis"] == "FY"
     assert result["trajectory_metrics"]["operating_margin_delta_1y"] == pytest.approx(0.02)
+    assert len(result["suggested_valuation_inputs"]["annual_observations"]) == 2
+    assert result["suggested_valuation_inputs"]["current_share_count"] == pytest.approx(104.0)

@@ -147,12 +147,24 @@ def test_stage5_2_reuses_supplied_target_fundamentals(monkeypatch, tmp_path):
             "fcf_margin_latest": 0.17,
             "dilution_5y": 0.04,
             "level1_score": 13.0,
+            "suggested_valuation_inputs": {
+                "annual_observations": [
+                    {"fiscal_year": "2021", "revenue": 250_000_000.0, "fcf_margin": 0.14},
+                    {"fiscal_year": "2022", "revenue": 280_000_000.0, "fcf_margin": 0.15},
+                    {"fiscal_year": "2023", "revenue": 310_000_000.0, "fcf_margin": 0.16},
+                    {"fiscal_year": "2024", "revenue": 350_000_000.0, "fcf_margin": 0.17},
+                    {"fiscal_year": "2025", "revenue": 390_000_000.0, "fcf_margin": 0.18},
+                ],
+                "current_share_count": 10_000_000.0,
+            },
         },
         target_fundamentals=target,
     )
 
     assert result["metrics"]["ev_to_fcf"] == pytest.approx(46.7692307692)
     assert result["metrics"]["ev_to_ebitda"] == pytest.approx(38.0)
+    assert result["suggested_valuation"]["applicable"] is True
+    assert result["suggested_valuation"]["current_price"] == pytest.approx(200.0)
 
 
 def test_stage5_2_without_shared_fundamentals_keeps_fetch_fallback(monkeypatch):

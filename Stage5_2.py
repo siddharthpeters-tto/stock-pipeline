@@ -95,6 +95,7 @@ from fmp_helpers import FmpRequestCounter, normalize_fmp_rows, normalize_symbol,
 from stock_research.fmp_common import median, safe_div, to_float, clamp
 from stock_research.peer_data import peer_symbols_from_list
 from stock_research.quarterly import compute_quarterly_pulse, fetch_quarterly_bundle
+from stock_research.suggested_valuation import calculate_suggested_valuation
 
 # =========================
 # CONFIG
@@ -784,9 +785,16 @@ def analyze_single_stock_stage5_2(
 
     investment_signal = investment_view(q_bucket, v_bucket)
     quarterly_bundle = fetch_quarterly_bundle(api, symbol, read_cache, write_cache)
+    suggested_valuation = calculate_suggested_valuation(
+        level1_row.get("suggested_valuation_inputs", {}),
+        current_price=live_price,
+        roic=m.get("roic"),
+        net_debt_to_ebitda=m.get("net_debt_to_ebitda"),
+    )
 
     return {
         "ticker": symbol,
+        "current_price": live_price,
         "quality_bucket": q_bucket,
         "valuation_bucket": v_bucket,
         "quadrant": quad,
@@ -796,6 +804,7 @@ def analyze_single_stock_stage5_2(
         "peer_medians": peer_medians,
         "peer_symbols": peer_symbols,
         "quarterly_pulse": compute_quarterly_pulse(quarterly_bundle),
+        "suggested_valuation": suggested_valuation,
     }
 
 
@@ -1022,6 +1031,12 @@ def main():
             v_bucket = valuation_bucket(m)
             quad = quadrant(q_bucket, v_bucket)
             qav_score = score_quality_adjusted_value(m, peer_medians)
+            suggested_valuation = calculate_suggested_valuation(
+                r.get("suggested_valuation_inputs", {}),
+                current_price=live_price,
+                roic=m.get("roic"),
+                net_debt_to_ebitda=m.get("net_debt_to_ebitda"),
+            )
 
 
 
@@ -1054,6 +1069,7 @@ def main():
                 "valuation_bucket": v_bucket,
                 "quadrant": quad,
                 "quality_adjusted_value_score": qav_score,
+                "suggested_valuation": suggested_valuation,
 
             }
 

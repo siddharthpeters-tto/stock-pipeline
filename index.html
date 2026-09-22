@@ -46,8 +46,13 @@
     #quarterlyReported { color:#b8c5d4; font-weight:600; }
     .section-note { margin-top:5px; color:var(--muted); font-size:12px; }
     .summary-card { display:grid; grid-template-columns:1fr auto; align-items:end; gap:20px; }
-    .ticker-title { margin:6px 0 0; font-size:clamp(34px,7vw,64px); letter-spacing:-.07em; line-height:.95; }
+    .ticker-line { display:flex; flex-wrap:wrap; align-items:baseline; gap:12px; margin-top:6px; }
+    .ticker-title { font-size:clamp(34px,7vw,64px); letter-spacing:-.07em; line-height:.95; }
+    .snapshot-price { color:#cbd6e4; font:500 clamp(18px,2.5vw,25px) "DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:-.03em; }
     .summary-view { color:var(--muted); font-size:13px; } .summary-view strong { color:var(--text); font-size:15px; }
+    .suggested-strip { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 10px; margin-top:10px; color:var(--muted); font:400 12px "DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .suggested-strip-label { color:#b8c5d4; font-family:Manrope,sans-serif; font-weight:600; }
+    .suggested-strip strong { color:var(--text); font-weight:500; } .suggested-strip .base-case { color:var(--green); font-weight:700; }
     .badges { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:7px; }
     .badge { display:inline-flex; padding:7px 10px; border:1px solid; border-radius:999px; font:500 11px "DM Mono",monospace; }
     .good { color:var(--green); background:#102c24; border-color:#27664e; } .mid { color:var(--amber); background:#302516; border-color:#765a2e; } .bad { color:var(--red); background:#321a21; border-color:#75404a; } .neutral { color:#b4bfcc; background:#1c2735; border-color:#38485d; }
@@ -58,6 +63,7 @@
     .trajectory-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } .trajectory-box { min-height:118px; }
     .trajectory-box .metric-value { font-size:21px; } .subhead { margin:0 0 12px; color:var(--muted); font:500 10px "DM Mono",monospace; letter-spacing:.1em; text-transform:uppercase; }
     .valuation-grid { grid-template-columns:repeat(5,minmax(0,1fr)); }
+    .valuation-assumptions { margin-top:11px; color:var(--muted); font:400 11px/1.5 "DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; }
     .pulse-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
     .pulse-card { display:grid; grid-template-columns:minmax(0,1fr) minmax(120px,45%); align-items:center; gap:12px; min-width:0; min-height:94px; padding:12px 14px; border:1px solid #1d2a3b; border-radius:10px; background:rgba(7,14,24,.55); }
     .pulse-copy { min-width:0; }
@@ -122,8 +128,9 @@
       <section class="card summary-card">
         <div>
           <div class="section-kicker">Research snapshot</div>
-          <div id="summaryTicker" class="ticker-title">—</div>
+          <div class="ticker-line"><div id="summaryTicker" class="ticker-title">—</div><div id="summaryPrice" class="snapshot-price"></div></div>
           <div id="summaryText" class="summary-view"></div>
+          <div id="suggestedBuyBelow" class="suggested-strip hidden"></div>
         </div>
         <div id="badges" class="badges"></div>
       </section>
@@ -131,6 +138,7 @@
       <section class="card">
         <div class="card-header"><div><div class="section-kicker">Market lens</div><h2>Valuation</h2></div><div class="section-note">Applicability-aware multiples</div></div>
         <div id="valuationMetrics" class="metric-grid valuation-grid"></div>
+        <div id="valuationAssumptions" class="valuation-assumptions hidden"></div>
       </section>
 
       <section class="card">
@@ -403,6 +411,37 @@
       ]);
     }
 
+    function renderSuggestedValuation(suggested, currentPrice) {
+      const strip = document.getElementById("suggestedBuyBelow");
+      const assumptions = document.getElementById("valuationAssumptions");
+      document.getElementById("summaryPrice").innerText = formatPrice(currentPrice);
+
+      if (!suggested || suggested.applicable !== true) {
+        strip.classList.add("hidden");
+        assumptions.classList.add("hidden");
+        strip.innerHTML = "";
+        assumptions.innerText = "";
+        return;
+      }
+
+      strip.innerHTML = `<span class="suggested-strip-label">Suggested Buy-Below:</span><span>Conservative <strong>${formatSuggestedPrice(suggested.conservative?.buy_below_price)}</strong></span><span aria-hidden="true">·</span><span>Base <strong class="base-case">${formatSuggestedPrice(suggested.base?.buy_below_price)}</strong></span><span aria-hidden="true">·</span><span>Optimistic <strong>${formatSuggestedPrice(suggested.optimistic?.buy_below_price)}</strong></span>`;
+      strip.classList.remove("hidden");
+
+      const base = suggested.base || {};
+      assumptions.innerText = `Base assumptions: Revenue CAGR ${formatPct(base.revenue_cagr)} · FCF Margin ${formatPct(base.fcf_margin)} · Terminal P/FCF ${formatNum(base.terminal_p_fcf, 1, "x")} · ${suggested.horizon_years}Y · Required Return ${formatPct(suggested.required_return)}`;
+      assumptions.classList.remove("hidden");
+    }
+
+    function formatPrice(value) {
+      if (value === null || value === undefined || !Number.isFinite(Number(value))) return "";
+      return "$" + Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatSuggestedPrice(value) {
+      if (value === null || value === undefined || !Number.isFinite(Number(value))) return "N/M";
+      return "$" + Math.round(Number(value)).toLocaleString();
+    }
+
     function renderComparisonTable(rows) {
       const wrap = document.getElementById("comparisonTableWrap");
 
@@ -513,6 +552,7 @@
         document.getElementById("summaryText").innerHTML = `
           <p><strong>${s2.investment_view || "—"}</strong> <span class="section-note">Investment view</span></p>
         `;
+        renderSuggestedValuation(s2.suggested_valuation, s2.current_price);
 
         renderBusinessMetrics(m, trajectory, annualIncome);
         renderQuarterlyPulse(s2.quarterly_pulse);

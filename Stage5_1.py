@@ -65,6 +65,7 @@ from datetime import datetime
 from fmp_helpers import FmpRequestCounter, normalize_fmp_rows
 from stock_research.fmp_common import clamp, pct, safe_get, to_float
 from stock_research.trajectory import compute_trajectory_metrics
+from stock_research.suggested_valuation import extract_valuation_inputs
 
 current_year = datetime.now().year
 load_dotenv()
@@ -535,6 +536,7 @@ def analyze_single_stock_stage5_1(symbol: str) -> Dict[str, Any]:
         **quant,
         "trajectory_metrics": trajectory,
         "target_fundamentals": extract_latest_fundamentals(quant_bundle),
+        "suggested_valuation_inputs": extract_valuation_inputs(quant_bundle),
         "kill_flags": flags,
         "level1_score": lvl1_score,
     }
