@@ -512,6 +512,36 @@ def valuation_bucket(m: Dict[str, Any]) -> str:
     return "unclear"
 
 
+def valuation_metric_states(m: Dict[str, Any]) -> Dict[str, Optional[str]]:
+    """Expose only the per-metric states supported by existing valuation bands."""
+    ev_fcf = m.get("ev_to_fcf")
+    fcf_y = m.get("fcf_yield")
+    ev_fcf_applicable = bool(m.get("ev_to_fcf_applicable", ev_fcf is not None and ev_fcf > 0))
+    fcf_y_applicable = bool(m.get("fcf_yield_applicable", fcf_y is not None and fcf_y > 0))
+
+    ev_fcf_state = "not_applicable"
+    if ev_fcf_applicable and ev_fcf is not None and ev_fcf > 0:
+        ev_fcf_state = valuation_bucket({"ev_to_fcf": ev_fcf, "ev_to_fcf_applicable": True})
+
+    fcf_yield_state = "not_applicable"
+    if fcf_y_applicable and fcf_y is not None and fcf_y > 0:
+        fcf_yield_state = valuation_bucket({
+            "ev_to_fcf": None,
+            "ev_to_fcf_applicable": False,
+            "fcf_yield": fcf_y,
+            "fcf_yield_applicable": True,
+        })
+
+    return {
+        # No deterministic cheap/fair/expensive bands exist for these metrics.
+        "ev_to_sales": None if m.get("ev_to_sales") is not None else "not_applicable",
+        "pe": None if m.get("earnings_yield") is not None and m.get("earnings_yield") > 0 else "not_applicable",
+        "ev_to_ebitda": None if m.get("ev_to_ebitda_applicable") else "not_applicable",
+        "ev_to_fcf": ev_fcf_state,
+        "fcf_yield": fcf_yield_state,
+    }
+
+
 def quadrant(quality: str, val: str) -> str:
 
     if quality == "high_quality":
@@ -796,6 +826,7 @@ def analyze_single_stock_stage5_2(
         "current_price": live_price,
         "quality_bucket": q_bucket,
         "valuation_bucket": v_bucket,
+        "valuation_metric_states": valuation_metric_states(m),
         "quadrant": quad,
         "investment_view": investment_signal,
         "quality_adjusted_value_score": qav_score,
@@ -1065,6 +1096,7 @@ def main():
 
                 "quality_bucket": q_bucket,
                 "valuation_bucket": v_bucket,
+                "valuation_metric_states": valuation_metric_states(m),
                 "quadrant": quad,
                 "quality_adjusted_value_score": qav_score,
                 "suggested_valuation": suggested_valuation,

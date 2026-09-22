@@ -382,6 +382,24 @@ def test_stage5_2_valuation_bucket_peer_and_fallback(monkeypatch, tmp_path):
     metrics = stage5_2.build_value_quality_inputs(level1, {"returnOnInvestedCapital": 0.22}, {"grossProfitMargin": 0.46})
     assert stage5_2.quality_bucket(metrics) == "high_quality"
     assert stage5_2.valuation_bucket({**metrics, "ev_to_fcf": 18.0, "fcf_yield": 0.06}) == "fair"
+    states = stage5_2.valuation_metric_states({
+        **metrics,
+        "ev_to_fcf": 18.0,
+        "ev_to_fcf_applicable": True,
+        "fcf_yield": 0.06,
+        "fcf_yield_applicable": True,
+        "ev_to_ebitda": 20.0,
+        "ev_to_ebitda_applicable": True,
+        "ev_to_sales": 8.0,
+        "earnings_yield": 0.03,
+    })
+    assert states == {
+        "ev_to_sales": None,
+        "pe": None,
+        "ev_to_ebitda": None,
+        "ev_to_fcf": "fair",
+        "fcf_yield": "fair",
+    }
     assert stage5_2.quadrant("high_quality", "fair") == "HQ_FairValue"
 
     peer_medians = {"peer_ev_to_fcf": 20.0, "peer_roic": 0.16}
@@ -393,6 +411,30 @@ def test_stage5_2_valuation_bucket_peer_and_fallback(monkeypatch, tmp_path):
     result = stage5_2.analyze_single_stock_stage5_2("AAPL", level1)
     assert result["quadrant"] in {"HQ_FairValue", "HQ_Cheap", "HQ_Expensive"}
     assert result["quality_adjusted_value_score"] > 0
+    assert result["valuation_metric_states"]["ev_to_fcf"] in {"cheap", "fair", "expensive"}
+
+
+def test_valuation_metric_states_reuse_existing_bands_and_mute_nm(monkeypatch):
+    set_env(monkeypatch)
+    stage5_2 = load_module("stage5_2_metric_states", "Stage5_2.py")
+
+    metrics = {
+        "ev_to_fcf": 15.0,
+        "ev_to_fcf_applicable": True,
+        "fcf_yield": 0.039,
+        "fcf_yield_applicable": True,
+        "ev_to_ebitda_applicable": False,
+        "earnings_yield": -0.01,
+    }
+    bucket_before = stage5_2.valuation_bucket(metrics)
+    assert stage5_2.valuation_metric_states(metrics) == {
+        "ev_to_sales": "not_applicable",
+        "pe": "not_applicable",
+        "ev_to_ebitda": "not_applicable",
+        "ev_to_fcf": "cheap",
+        "fcf_yield": "expensive",
+    }
+    assert stage5_2.valuation_bucket(metrics) == bucket_before == "cheap"
 
 
 def test_negative_valuation_metrics_do_not_create_positive_cheapness_signal(monkeypatch):

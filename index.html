@@ -58,6 +58,15 @@
     .good { color:var(--green); background:#102c24; border-color:#27664e; } .mid { color:var(--amber); background:#302516; border-color:#765a2e; } .bad { color:var(--red); background:#321a21; border-color:#75404a; } .neutral { color:#b4bfcc; background:#1c2735; border-color:#38485d; }
     .metric-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
     .metric-box { min-width:0; padding:14px; border:1px solid #1d2a3b; border-radius:10px; background:rgba(7,14,24,.55); }
+    .valuation-tile { position:relative; overflow:hidden; }
+    .valuation-tile::before { content:""; position:absolute; inset:0 0 auto; height:2px; opacity:.72; }
+    .valuation-tile.state-cheap { border-color:rgba(98,211,155,.30); } .valuation-tile.state-cheap::before { background:var(--green); }
+    .valuation-tile.state-fair { border-color:rgba(232,184,109,.28); } .valuation-tile.state-fair::before { background:var(--amber); }
+    .valuation-tile.state-expensive { border-color:rgba(241,127,130,.28); } .valuation-tile.state-expensive::before { background:var(--red); }
+    .valuation-tile.state-not_applicable { border-color:#1b2736; opacity:.76; }
+    .valuation-state { display:inline-flex; align-items:center; gap:5px; margin-top:7px; color:var(--muted); font:500 9px "DM Mono",monospace; letter-spacing:.06em; text-transform:uppercase; }
+    .valuation-state::before { content:""; width:5px; height:5px; border-radius:50%; background:currentColor; opacity:.85; }
+    .state-cheap .valuation-state { color:var(--green); } .state-fair .valuation-state { color:var(--amber); } .state-expensive .valuation-state { color:var(--red); }
     .metric-label { color:var(--muted); font-size:11px; line-height:1.35; } .metric-value { margin-top:8px; color:var(--text); font:500 clamp(18px,2.5vw,25px) "DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; overflow-wrap:anywhere; }
     .metric-delta { margin-top:7px; color:var(--muted); font:400 11px "DM Mono",ui-monospace,SFMono-Regular,Consolas,monospace; } .positive { color:var(--green); } .negative { color:var(--red); } .caution { color:var(--amber); } .unavailable { color:#91a0b2; }
     .trajectory-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } .trajectory-box { min-height:118px; }
@@ -401,13 +410,21 @@
       return row && row.quarter ? row.quarter : "Quarter";
     }
 
-    function renderValuation(m) {
+    function valuationCard(label, value, formatter, state) {
+      const supported = ["cheap", "fair", "expensive", "not_applicable"].includes(state);
+      const stateClass = supported ? ` state-${state}` : "";
+      const stateLabel = state === "not_applicable" ? "N/M" : state;
+      const status = supported ? `<div class="valuation-state">${stateLabel}</div>` : "";
+      return `<div class="metric-box valuation-tile${stateClass}"><div class="metric-label">${label}</div><div class="metric-value">${formatter(value)}</div>${status}</div>`;
+    }
+
+    function renderValuation(m, states = {}) {
       renderMetrics("valuationMetrics", [
-        metricCard("EV / Sales", m.ev_to_sales, null, value => formatMultiple(value, true)),
-        metricCard("P/E", m.earnings_yield, null, value => Number(value) > 0 ? formatMultiple(1 / Number(value), true) : "N/M"),
-        metricCard("EV / EBITDA", m.ev_to_ebitda, null, value => formatMultiple(value, m.ev_to_ebitda_applicable)),
-        metricCard("EV / FCF", m.ev_to_fcf, null, value => formatMultiple(value, m.ev_to_fcf_applicable)),
-        metricCard("FCF Yield", m.fcf_yield, null, value => m.fcf_yield_applicable === false ? "N/M" : formatPct(value)),
+        valuationCard("EV / Sales", m.ev_to_sales, value => formatMultiple(value, true), states.ev_to_sales),
+        valuationCard("P/E", m.earnings_yield, value => Number(value) > 0 ? formatMultiple(1 / Number(value), true) : "N/M", states.pe),
+        valuationCard("EV / EBITDA", m.ev_to_ebitda, value => formatMultiple(value, m.ev_to_ebitda_applicable), states.ev_to_ebitda),
+        valuationCard("EV / FCF", m.ev_to_fcf, value => formatMultiple(value, m.ev_to_fcf_applicable), states.ev_to_fcf),
+        valuationCard("FCF Yield", m.fcf_yield, value => m.fcf_yield_applicable === false ? "N/M" : formatPct(value), states.fcf_yield),
       ]);
     }
 
@@ -417,9 +434,10 @@
       document.getElementById("summaryPrice").innerText = formatPrice(currentPrice);
 
       if (!suggested || suggested.applicable !== true) {
-        strip.classList.add("hidden");
+        const reason = suggested && suggested.reason ? ` <span>\u00b7 ${suggested.reason}</span>` : "";
+        strip.innerHTML = `<span class="suggested-strip-label">Suggested Buy-Below:</span><strong>N/M</strong>${reason}`;
+        strip.classList.remove("hidden");
         assumptions.classList.add("hidden");
-        strip.innerHTML = "";
         assumptions.innerText = "";
         return;
       }
@@ -556,7 +574,7 @@
 
         renderBusinessMetrics(m, trajectory, annualIncome);
         renderQuarterlyPulse(s2.quarterly_pulse);
-        renderValuation({ ...m, quality_adjusted_value_score: s2.quality_adjusted_value_score });
+        renderValuation({ ...m, quality_adjusted_value_score: s2.quality_adjusted_value_score }, s2.valuation_metric_states || {});
         document.getElementById("json").innerText = JSON.stringify(data, null, 2);
 
         if (includePeers && Array.isArray(data.comparison) && data.comparison.length > 0) {
